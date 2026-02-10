@@ -26,7 +26,7 @@ class TrashService:
     def list_files(self):
         conn = self.get_connection()
         c = conn.cursor(dictionary=True)
-        c.execute('SELECT * FROM file_trash ORDER BY id DESC')
+        c.execute('SELECT * FROM file_trash WHERE is_hidden = 0 ORDER BY id DESC')
         rows = c.fetchall()
         conn.close()
         return rows
@@ -34,7 +34,7 @@ class TrashService:
     def get_file(self, file_id):
         conn = self.get_connection()
         c = conn.cursor(dictionary=True)
-        c.execute('SELECT * FROM file_trash WHERE id = %s', (file_id,))
+        c.execute('SELECT * FROM file_trash WHERE id = %s AND is_hidden = 0', (file_id,))
         row = c.fetchone()
         conn.close()
         return row
@@ -42,7 +42,14 @@ class TrashService:
     def remove_file(self, file_id):
         conn = self.get_connection()
         c = conn.cursor()
-        c.execute('DELETE FROM file_trash WHERE id = %s', (file_id,))
+        c.execute('UPDATE file_trash SET is_hidden = 1 WHERE id = %s AND is_hidden = 0', (file_id,))
+        conn.commit()
+        conn.close()
+
+    def clear_files(self):
+        conn = self.get_connection()
+        c = conn.cursor()
+        c.execute('UPDATE file_trash SET is_hidden = 1 WHERE is_hidden = 0')
         conn.commit()
         conn.close()
 
