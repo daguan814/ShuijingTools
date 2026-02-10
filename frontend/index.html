@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>水镜共享中心</title>
+  <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/static/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/styles.css" rel="stylesheet">
+</head>
+<body>
+  <div id="lockScreen" class="lock-screen">
+    <div class="lock-container">
+      <div class="lock-card">
+        <div class="lock-header">
+          <h2><i class="bi bi-lock"></i> 密码验证</h2>
+          <p class="mb-0">请输入密码访问系统</p>
+        </div>
+        <div class="lock-body">
+          <div class="password-display"><span id="passwordDisplay" class="password-dots">••••</span></div>
+          <div class="keypad">
+            <button class="keypad-btn" onclick="addNumber(1)">1</button>
+            <button class="keypad-btn" onclick="addNumber(2)">2</button>
+            <button class="keypad-btn" onclick="addNumber(3)">3</button>
+            <button class="keypad-btn" onclick="addNumber(4)">4</button>
+            <button class="keypad-btn" onclick="addNumber(5)">5</button>
+            <button class="keypad-btn" onclick="addNumber(6)">6</button>
+            <button class="keypad-btn" onclick="addNumber(7)">7</button>
+            <button class="keypad-btn" onclick="addNumber(8)">8</button>
+            <button class="keypad-btn" onclick="addNumber(9)">9</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mainContent" class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">水镜共享</div>
+      <div class="nav-slider" id="navSlider">
+        <button class="nav-btn active" data-view="library-view"><i class="bi bi-grid-3x3-gap"></i> 卡片中心</button>
+        <button class="nav-btn" data-view="upload-view"><i class="bi bi-cloud-upload"></i> 上传卡片</button>
+        <button class="nav-btn" data-view="trash-view"><i class="bi bi-trash"></i> 回收站</button>
+      </div>
+    </aside>
+
+    <main class="main-pane">
+      <div id="library-view" class="page-view">
+        <div class="panel card mb-3 library-drop-zone" id="libraryDropZone">
+          <div class="card-header"><h5 class="mb-0">卡片中心（文本可拖拽到下方收藏）</h5></div>
+          <div class="card-body">
+            <div class="card-grid three-col" id="textCards"></div>
+            <div class="card-grid three-col mt-3" id="fileCards"></div>
+          </div>
+        </div>
+
+        <div class="favorite-layout single-col">
+          <div class="favorite-column" data-group="1">
+            <div class="favorite-column-header">收藏</div>
+            <div class="favorite-column-body card-grid three-col" id="favoriteGroup1"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="upload-view" class="page-view hidden">
+        <div class="panel card mb-3">
+          <div class="card-header"><h5 class="mb-0">上传文本</h5></div>
+          <div class="card-body">
+            <form id="addTextForm">
+              <div class="mb-3">
+                <textarea class="form-control" id="content" rows="4" placeholder="请输入要保存的文本内容..." required></textarea>
+              </div>
+              <div class="text-end"><button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> 添加文本</button></div>
+            </form>
+          </div>
+        </div>
+
+        <div class="panel card">
+          <div class="card-header"><h5 class="mb-0">上传文件</h5></div>
+          <div class="card-body">
+            <form id="uploadForm" enctype="multipart/form-data">
+              <div class="mb-3">
+                <input class="form-control" type="file" id="uploadFiles" name="files" multiple>
+                <div class="form-text" id="fileHint">已选择 0 个文件</div>
+                <div class="file-name-list" id="fileNames"></div>
+              </div>
+              <div class="text-end"><button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> 上传</button></div>
+            </form>
+            <div class="upload-progress" id="uploadProgress" style="display:none;">
+              <div class="progress"><div class="progress-bar" id="uploadProgressBar" role="progressbar" style="width:0%"></div></div>
+              <div class="progress-text" id="uploadProgressText">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="trash-view" class="page-view hidden">
+        <div class="panel card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-trash"></i> 回收站</h5>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="clearTrashBtn">清空回收站</button>
+          </div>
+          <div class="card-body">
+            <p class="text-muted small mb-3">清空后仅从回收站列表移除，数据库记录保留。</p>
+            <h6 class="mb-2">已删除文本</h6>
+            <div id="trashTextList" class="mb-3"></div>
+            <h6 class="mb-2">已删除文件</h6>
+            <div id="trashFileList"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

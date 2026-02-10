@@ -3,37 +3,27 @@
 一个轻量的内网共享工具：文本管理 + 临时文件中转，适合在多台电脑之间快速传递内容。
 
 ## 功能
-- 文本管理：新增、删除、列表展示
+- 文本管理：新增、删除、收藏、拖拽分栏
 - 文件中转：上传、下载、删除
-- 多文件上传：一次选择多个文件
-- 推荐 ZIP：文件夹请先打包为 ZIP 后上传
-- 访问密码：前端锁屏密码
+- 回收站：文本与文件还原、清空后永久删除
+- 前端锁屏密码访问
 
-## 运行环境
-- Python 3.8+
-- Flask
-- mysql-connector-python
+## 技术架构
+- 后端：FastAPI（`main.py`）
+- API 组织：`Controller/api_router.py`（APIRouter）
+- 业务层：`Service/`
+- 数据层：`db/database.py`（MySQL）
+- 前端：前后端分离，代码在 `frontend/`
+- 网关：Nginx 统一入口，`/api/*` 反向代理后端
 
-## 快速启动
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
-默认监听：`https://0.0.0.0:8080`
-
-## 配置说明
-- 上传目录：`uploads/`（程序启动时自动创建）
-- 最大上传大小：`app.py` 中 `MAX_CONTENT_LENGTH`
-- 数据库配置：`db/database.py`
-
-## 文件与目录说明
-- `uploads/` 用于临时文件中转，**不纳入 Git**
-- 该目录在服务启动时会自动创建，无需手动提交
-
-## 使用提示
-- 文件夹上传请先压缩为 ZIP，再上传会更稳定。
-- 系统设计为“临时中转”，默认不做长期持久化。
+## 目录结构
+- `main.py`：应用入口（支持 `python main.py`）
+- `Controller/`：API 路由层
+- `Service/`：业务逻辑
+- `db/`：数据库连接与初始化
+- `frontend/`：静态前端（包含 `frontend/static/`）
+- `SSL/`：证书文件
+- `Dockerfile.backend`：后端镜像构建文件
 
 ## 免责声明
 请勿用于存储敏感或重要文件，建议定期清理 `uploads/`。
