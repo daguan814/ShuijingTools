@@ -75,10 +75,17 @@ async def verify_auth(request: Request):
     passcode = str(payload.get('passcode', '')).strip()
     if not passcode:
         raise HTTPException(status_code=400, detail='passcode required')
-    ok = auth_service.verify_passcode(passcode)
-    if not ok:
+    client_ip = get_client_ip(request)
+    result = auth_service.verify_passcode_with_ip(passcode, client_ip)
+    if result.get('banned'):
+        raise HTTPException(
+            status_code=403,
+            detail='ip banned 7 days',
+        )
+    if not result.get('ok'):
         raise HTTPException(status_code=401, detail='invalid passcode')
-    return {'ok': True}
+    token = auth_service.create_session(client_ip)
+    return {'ok': True, 'token': token}
 
 
 @router.get('/texts')

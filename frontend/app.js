@@ -5,6 +5,36 @@ let textsState = [];
 let filesState = [];
 let favoritesState = [];
 
+let hasShownAuthExpired = false;
+const rawFetch = window.fetch.bind(window);
+window.fetch = async (input, init = {}) => {
+  const requestUrl = typeof input === 'string' ? input : (input?.url || '');
+  const isApiRequest = requestUrl.startsWith(API_PREFIX) || requestUrl.includes('/api/');
+  const isAuthVerify = requestUrl.endsWith('/auth/verify');
+
+  const nextInit = { ...init };
+  if (isApiRequest && !isAuthVerify) {
+    const headers = new Headers(init?.headers || undefined);
+    const token = getCookie('text_system_token');
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    nextInit.headers = headers;
+  }
+
+  const response = await rawFetch(input, nextInit);
+
+  if (isApiRequest && !isAuthVerify && response.status === 401) {
+    clearAuthState();
+    if (!hasShownAuthExpired) {
+      hasShownAuthExpired = true;
+      alert('登录状态已失效，请重新输入密码');
+      window.location.reload();
+    }
+  }
+  return response;
+};
+
 window.addEventListener('DOMContentLoaded', () => {
   checkLoginStatus();
   document.addEventListener('keydown', (event) => {
@@ -13,7 +43,13 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkLoginStatus() {
-  if (getCookie('text_system_login') === 'true') showMainContent();
+  const loginOk = getCookie('text_system_login') === 'true';
+  const token = getCookie('text_system_token');
+  if (loginOk && token) {
+    showMainContent();
+    return;
+  }
+  clearAuthState();
 }
 
 function addNumber(number) {
@@ -35,8 +71,17 @@ async function checkPassword() {
       body: JSON.stringify({ passcode }),
     });
     if (res.ok) {
+      const data = await res.json();
+      if (!data?.token) throw new Error('missing token');
+      setCookie('text_system_token', data.token, 7);
       setCookie('text_system_login', 'true', 7);
       showMainContent();
+      return;
+    }
+    if (res.status === 403) {
+      alert('当前IP已被封禁7天');
+      currentPassword = '';
+      updatePasswordDisplay();
       return;
     }
   } catch (_) {
@@ -526,5 +571,14 @@ function getCookie(name) {
 function setCookie(name, value, days) {
   const date = new Date();
   date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-  document.cookie = `${name}=${value}; expires=${date.toUTCString()}; path=/`;
+  document.cookie = `${name}=${value}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
+}
+
+function deleteCookie(name) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+}
+
+function clearAuthState() {
+  deleteCookie('text_system_login');
+  deleteCookie('text_system_token');
 }

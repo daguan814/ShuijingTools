@@ -76,6 +76,27 @@ class DatabaseManager:
             )
             c.execute(
                 """
+                CREATE TABLE IF NOT EXISTS auth_ip_guard (
+                    ip VARCHAR(45) PRIMARY KEY,
+                    fail_count INT NOT NULL DEFAULT 0,
+                    banned_until DATETIME NULL,
+                    updated_at DATETIME
+                )
+                """
+            )
+            c.execute(
+                """
+                CREATE TABLE IF NOT EXISTS auth_sessions (
+                    token VARCHAR(128) PRIMARY KEY,
+                    client_ip VARCHAR(45) NULL,
+                    is_active TINYINT(1) NOT NULL DEFAULT 1,
+                    created_at DATETIME,
+                    expires_at DATETIME
+                )
+                """
+            )
+            c.execute(
+                """
                 INSERT INTO auth_config (id, passcode, updated_at)
                 VALUES (1, '521', NOW())
                 ON DUPLICATE KEY UPDATE id = id
