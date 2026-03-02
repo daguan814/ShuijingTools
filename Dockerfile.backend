@@ -7,6 +7,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8081
+ENV APP_HOST=0.0.0.0
+ENV APP_PORT=8080
+ENV SSL_CERT_FILE=/app/ssl/shuijing.site.crt
+ENV SSL_KEY_FILE=/app/ssl/shuijing.site.key
 
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8081"]
+EXPOSE 8080
+
+CMD ["gunicorn", "main:app", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "120", "--certfile", "/app/ssl/shuijing.site.crt", "--keyfile", "/app/ssl/shuijing.site.key"]

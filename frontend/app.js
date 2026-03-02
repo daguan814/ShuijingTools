@@ -277,6 +277,8 @@ function initUploadForm() {
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_PREFIX}/files/upload`);
+    const token = getCookie('text_system_token');
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.upload.onprogress = (evt) => {
       if (!evt.lengthComputable || !progressBar || !progressText) return;
       const percent = Math.round((evt.loaded / evt.total) * 100);
