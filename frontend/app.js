@@ -199,7 +199,7 @@ function renderFileCards() {
       </div>
       <div class="data-card-content">${escapeHtml(f.path)}</div>
       <div class="data-card-actions">
-        <a href="${API_PREFIX}/files/download/${encodeURIComponent(f.path)}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i> 下载</a>
+        <button type="button" class="btn btn-outline-primary btn-sm file-download-btn" data-path="${escapeHtml(f.path)}"><i class="bi bi-download"></i> 下载</button>
         <button type="button" class="btn btn-outline-danger btn-sm file-delete-btn" data-path="${escapeHtml(f.path)}"><i class="bi bi-trash"></i> 删除</button>
       </div>
     </div>`).join('');
@@ -326,6 +326,12 @@ function initGlobalActions() {
       const res = await fetch(`${API_PREFIX}/texts/${textId}`, { method: 'DELETE' });
       if (!res.ok) return alert('删除失败');
       await Promise.all([reloadLibrary(), refreshTrash()]);
+      return;
+    }
+
+    const downloadBtn = event.target.closest('.file-download-btn');
+    if (downloadBtn) {
+      await downloadFile(downloadBtn.dataset.path || '');
       return;
     }
 
@@ -562,6 +568,47 @@ function formatDisplayTime(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   return raw.replace('T', ' ').replace('Z', '').split('.')[0];
+}
+
+async function downloadFile(path) {
+  if (!path) {
+    alert('文件路径无效');
+    return;
+  }
+
+  const res = await fetch(`${API_PREFIX}/files/download/${encodeURIComponent(path)}`);
+  if (!res.ok) {
+    alert(res.status === 404 ? '文件不存在' : '下载失败');
+    return;
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = parseDownloadName(res.headers.get('Content-Disposition'), path);
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+function parseDownloadName(contentDisposition, fallbackPath) {
+  const fallback = String(fallbackPath || '').split('/').pop() || 'download.bin';
+  if (!contentDisposition) return fallback;
+
+  const utf8Match = contentDisposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (utf8Match && utf8Match[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch (_) {
+      // ignore and fallback
+    }
+  }
+
+  const filenameMatch = contentDisposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+  if (filenameMatch && filenameMatch[1]) return filenameMatch[1];
+  return fallback;
 }
 
 function getCookie(name) {
