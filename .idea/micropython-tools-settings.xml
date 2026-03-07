@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="MicroPythonTools">
-    <option name="areStubsEnabled" value="false" />
-    <option name="pluginEnabled" value="true" />
-    <option name="portName" value="/dev/cu.usbserial-1140" />
-    <option name="webReplIp" value="192.168.100.196" />
-  </component>
-</project>
