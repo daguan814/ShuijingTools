@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from db.database import db_manager
+from app.db.database import db_manager
 
 
 class FileFavoriteService:

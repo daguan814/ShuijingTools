@@ -5,10 +5,10 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request, send_file
 from werkzeug.exceptions import BadRequest
 
-from Service.auth_service import auth_service
-from Service.file_favorite_service import file_favorite_service
-from Service.text_service import text_service
-from Service.trash_service import trash_service
+from app.Service.auth_service import auth_service
+from app.Service.file_favorite_service import file_favorite_service
+from app.Service.text_service import text_service
+from app.Service.trash_service import trash_service
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = BASE_DIR / 'uploads'
