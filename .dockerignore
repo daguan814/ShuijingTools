@@ -1,7 +1,10 @@
-﻿__pycache__/
-*.pyc
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
 .git/
 .idea/
 .vscode/
+.deploy_app.sftp
 uploads/
 SSL/

@@ -1,2 +1,8 @@
 .venv
 .idea
+__pycache__/
+*.py[cod]
+*$py.class
+.deploy_app.sftp
+uploads/
+SSL/
