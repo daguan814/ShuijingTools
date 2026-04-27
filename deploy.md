@@ -61,6 +61,7 @@ mkdir frontend
 put Controller/api_router.py Controller/api_router.py
 put db/database.py db/database.py
 put Service/auth_service.py Service/auth_service.py
+put Service/file_favorite_service.py Service/file_favorite_service.py
 put Service/text_service.py Service/text_service.py
 put Service/trash_service.py Service/trash_service.py
 put frontend/index.html frontend/index.html

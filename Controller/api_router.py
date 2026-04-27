@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request, send_file
 from werkzeug.exceptions import BadRequest
 
 from Service.auth_service import auth_service
+from Service.file_favorite_service import file_favorite_service
 from Service.text_service import text_service
 from Service.trash_service import trash_service
 
@@ -51,6 +52,7 @@ def safe_join_upload(rel_path: str) -> Path:
 
 
 def list_uploads():
+    favorite_paths = {item['path'] for item in file_favorite_service.list_paths()}
     uploads = []
     for full_path in UPLOAD_DIR.glob('*'):
         if not full_path.is_file():
@@ -59,6 +61,7 @@ def list_uploads():
             'path': full_path.name,
             'size': format_size(full_path.stat().st_size),
             'mtime': full_path.stat().st_mtime,
+            'is_favorite': full_path.name in favorite_paths,
         })
     uploads.sort(key=lambda item: item['mtime'], reverse=True)
     for item in uploads:
@@ -185,6 +188,35 @@ def get_files():
     return jsonify(list_uploads())
 
 
+@api_bp.route('/files/favorites', methods=['GET'])
+def get_file_favorites():
+    files_by_path = {item['path']: item for item in list_uploads()}
+    favorites = []
+    for item in file_favorite_service.list_paths():
+        file_item = files_by_path.get(item['path'])
+        if file_item:
+            favorites.append(file_item)
+    return jsonify(favorites)
+
+
+@api_bp.route('/files/favorite', methods=['POST'])
+def set_file_favorite():
+    path = request.form.get('path', '')
+    enabled = str(request.form.get('enabled', 'true')).lower() != 'false'
+    target = safe_join_upload(path)
+    if not target.exists() or not target.is_file():
+        file_favorite_service.remove(path)
+        return jsonify({'detail': 'file not found'}), 404
+
+    file_favorite_service.set_favorite(path, enabled)
+    text_service.add_log(
+        'file_favorite' if enabled else 'file_unfavorite',
+        content=path,
+        client_ip=get_client_ip(),
+    )
+    return jsonify({'path': path, 'is_favorite': enabled})
+
+
 @api_bp.route('/files/upload', methods=['POST'])
 def upload_files():
     files = request.files.getlist('files')
@@ -219,6 +251,7 @@ def delete_file():
         trash_path = safe_join_upload(trash_rel)
         shutil.move(str(target), str(trash_path))
         trash_service.add_file(path, trash_rel, size_bytes)
+        file_favorite_service.remove(path)
         text_service.add_log('file_delete', content=path, client_ip=get_client_ip())
     return '', 204
 

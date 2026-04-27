@@ -6,6 +6,7 @@ import os
 class DatabaseManager:
     def __init__(self):
         self.host = os.getenv("DB_HOST", "127.0.0.1")
+        self.port = int(os.getenv("DB_PORT", "3306"))
         self.user = os.getenv("DB_USER", "root")
         self.password = os.getenv("DB_PASSWORD", "Lhf134652")
         self.database = os.getenv("DB_NAME", "shuijingTools")
@@ -16,6 +17,7 @@ class DatabaseManager:
         try:
             conn = mysql.connector.connect(
                 host=self.host,
+                port=self.port,
                 user=self.user,
                 password=self.password,
                 connection_timeout=5
@@ -62,6 +64,14 @@ class DatabaseManager:
                     size BIGINT NOT NULL,
                     is_hidden TINYINT(1) NOT NULL DEFAULT 0,
                     deleted_at DATETIME
+                )
+                """
+            )
+            c.execute(
+                """
+                CREATE TABLE IF NOT EXISTS file_favorites (
+                    path VARCHAR(512) PRIMARY KEY,
+                    created_at DATETIME
                 )
                 """
             )
@@ -165,6 +175,7 @@ class DatabaseManager:
             pool_size=pool_size,
             pool_reset_session=True,
             host=self.host,
+            port=self.port,
             user=self.user,
             password=self.password,
             database=self.database,

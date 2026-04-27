@@ -1,0 +1,32 @@
+cd /vol2/1000/backup/docker/shuijingtools-app
+lcd C:\Users\lu873\Documents\Code\ShuijingTools
+put main.py
+put requirements.txt
+put Dockerfile.backend
+put .dockerignore
+put readme.md
+mkdir Controller
+mkdir db
+mkdir Service
+mkdir frontend
+put Controller/api_router.py Controller/api_router.py
+put db/database.py db/database.py
+put Service/auth_service.py Service/auth_service.py
+put Service/file_favorite_service.py Service/file_favorite_service.py
+put Service/text_service.py Service/text_service.py
+put Service/trash_service.py Service/trash_service.py
+put frontend/index.html frontend/index.html
+put frontend/app.js frontend/app.js
+put frontend/styles.css frontend/styles.css
+mkdir frontend/static
+mkdir frontend/static/bootstrap
+mkdir frontend/static/bootstrap/css
+mkdir frontend/static/bootstrap/js
+mkdir frontend/static/bootstrap-icons
+mkdir frontend/static/bootstrap-icons/fonts
+put -r frontend/static/bootstrap/css/* frontend/static/bootstrap/css/
+put -r frontend/static/bootstrap/js/* frontend/static/bootstrap/js/
+put -r frontend/static/bootstrap-icons/* frontend/static/bootstrap-icons/
+put -r frontend/static/bootstrap-icons/fonts/* frontend/static/bootstrap-icons/fonts/
+put frontend/static/icon.svg frontend/static/icon.svg
+bye

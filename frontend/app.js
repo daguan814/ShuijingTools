@@ -108,7 +108,6 @@ function showMainContent() {
   initUploadForm();
   initTrashActions();
   initGlobalActions();
-  initDragTargets();
 
   reloadLibrary();
 }
@@ -155,7 +154,6 @@ function renderAll() {
   renderFileCards();
   renderFavoriteColumns();
   processTextContent();
-  bindDraggableCards();
 }
 
 function renderTextCards() {
@@ -170,9 +168,10 @@ function renderTextCards() {
   container.innerHTML = visibleTexts.map((t) => {
     const safe = escapeHtml(t.content || '');
     return `
-      <div class="data-card" draggable="true" data-type="text" data-id="${t.id}">
+      <div class="data-card" data-type="text" data-id="${t.id}">
         <div class="data-card-top">
           <small class="text-muted"><i class="bi bi-clock"></i> ${escapeHtml(formatDisplayTime(t.created_at))}</small>
+          <button type="button" class="btn btn-outline-warning btn-sm text-favorite-btn" data-id="${t.id}" title="收藏"><i class="bi bi-star"></i> 收藏</button>
         </div>
         <div class="data-card-content text-content">${safe}</div>
         <div class="data-card-actions">
@@ -186,12 +185,13 @@ function renderTextCards() {
 function renderFileCards() {
   const container = document.getElementById('fileCards');
   if (!container) return;
-  if (!filesState.length) {
+  const visibleFiles = filesState.filter((f) => !f.is_favorite);
+  if (!visibleFiles.length) {
     container.innerHTML = '<div class="empty-state small-empty"><h6>暂无文件</h6></div>';
     return;
   }
 
-  container.innerHTML = filesState.map((f) => `
+  container.innerHTML = visibleFiles.map((f) => `
     <div class="data-card" data-type="file" data-path="${escapeHtml(f.path)}">
       <div class="data-card-top">
         <span class="badge text-bg-secondary">文件</span>
@@ -199,6 +199,7 @@ function renderFileCards() {
       </div>
       <div class="data-card-content">${escapeHtml(f.path)}</div>
       <div class="data-card-actions">
+        <button type="button" class="btn btn-outline-warning btn-sm file-favorite-btn" data-path="${escapeHtml(f.path)}"><i class="bi bi-star"></i> 收藏</button>
         <button type="button" class="btn btn-outline-primary btn-sm file-download-btn" data-path="${escapeHtml(f.path)}"><i class="bi bi-download"></i> 下载</button>
         <button type="button" class="btn btn-outline-danger btn-sm file-delete-btn" data-path="${escapeHtml(f.path)}"><i class="bi bi-trash"></i> 删除</button>
       </div>
@@ -209,20 +210,41 @@ function renderFavoriteColumns() {
   const g1 = document.getElementById('favoriteGroup1');
   if (!g1) return;
 
-  const group1 = favoritesState;
+  const group1 = [
+    ...favoritesState.map((item) => ({ ...item, favorite_type: 'text' })),
+    ...filesState.filter((item) => item.is_favorite).map((item) => ({ ...item, favorite_type: 'file' })),
+  ];
   g1.innerHTML = renderFavoriteGroup(group1);
 
-  if (!group1.length) g1.innerHTML = '<div class="favorite-empty">拖到这里</div>';
+  if (!group1.length) g1.innerHTML = '<div class="favorite-empty">暂无收藏</div>';
 }
 
 function renderFavoriteGroup(items) {
   return items.map((item) => {
+    if (item.favorite_type === 'file') {
+      const safePath = escapeHtml(item.path || '');
+      return `
+        <div class="favorite-item" data-type="file" data-path="${safePath}">
+          <div class="data-card-top">
+            <span class="badge text-bg-secondary">文件</span>
+            <small class="text-muted"><i class="bi bi-hdd"></i> ${escapeHtml(item.size || '')}</small>
+          </div>
+          <div class="favorite-item-content">${safePath}</div>
+          <div class="favorite-item-actions">
+            <button type="button" class="btn btn-outline-primary btn-sm file-download-btn" data-path="${safePath}"><i class="bi bi-download"></i> 下载</button>
+            <button type="button" class="btn btn-outline-warning btn-sm file-unfavorite-btn" data-path="${safePath}"><i class="bi bi-star-fill"></i> 取消收藏</button>
+            <button type="button" class="btn btn-outline-danger btn-sm file-delete-btn" data-path="${safePath}"><i class="bi bi-trash"></i> 删除</button>
+          </div>
+        </div>`;
+    }
+
     const safe = escapeHtml(item.content || '');
     return `
-      <div class="favorite-item" draggable="true" data-type="text" data-id="${item.id}">
+      <div class="favorite-item" data-type="text" data-id="${item.id}">
         <div class="favorite-item-content text-content">${safe}</div>
         <div class="favorite-item-actions">
           <button type="button" class="btn btn-outline-secondary btn-sm text-copy-btn" data-content="${safe}"><i class="bi bi-clipboard"></i> 复制</button>
+          <button type="button" class="btn btn-outline-warning btn-sm text-unfavorite-btn" data-id="${item.id}"><i class="bi bi-star-fill"></i> 取消收藏</button>
           <button type="button" class="btn btn-outline-danger btn-sm favorite-delete-btn" data-id="${item.id}"><i class="bi bi-trash"></i> 删除</button>
         </div>
       </div>`;
@@ -232,9 +254,24 @@ function renderFavoriteGroup(items) {
 function initAddTextForm() {
   const form = document.getElementById('addTextForm');
   if (!form) return;
+  const contentInput = document.getElementById('content');
+  const pasteBtn = document.getElementById('pasteTextBtn');
+
+  pasteBtn?.addEventListener('click', async () => {
+    try {
+      const pasted = await navigator.clipboard.readText();
+      if (!pasted.trim()) return showTip('剪贴板没有文本');
+      contentInput.value = pasted;
+      contentInput.focus();
+      showTip('已粘贴');
+    } catch (_) {
+      alert('浏览器不允许读取剪贴板，请检查权限或使用 Ctrl+V');
+    }
+  });
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const content = document.getElementById('content').value.trim();
+    const content = contentInput.value.trim();
     if (!content) return;
 
     const data = new FormData();
@@ -242,7 +279,7 @@ function initAddTextForm() {
     const res = await fetch(`${API_PREFIX}/texts`, { method: 'POST', body: data });
     if (!res.ok) return alert('添加失败');
 
-    document.getElementById('content').value = '';
+    contentInput.value = '';
     await reloadLibrary();
   });
 }
@@ -254,6 +291,7 @@ function initUploadForm() {
   const filesInput = document.getElementById('uploadFiles');
   const fileHint = document.getElementById('fileHint');
   const fileNames = document.getElementById('fileNames');
+  const dropZone = document.getElementById('fileDropZone');
 
   const renderSelected = () => {
     const files = filesInput?.files || [];
@@ -262,6 +300,18 @@ function initUploadForm() {
   };
 
   filesInput?.addEventListener('change', renderSelected);
+  dropZone?.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone?.addEventListener('drop', (event) => {
+    event.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (!filesInput || !event.dataTransfer?.files?.length) return;
+    filesInput.files = event.dataTransfer.files;
+    renderSelected();
+  });
   renderSelected();
 
   form.addEventListener('submit', async (event) => {
@@ -329,9 +379,37 @@ function initGlobalActions() {
       return;
     }
 
+    const textFavoriteBtn = event.target.closest('.text-favorite-btn');
+    if (textFavoriteBtn) {
+      await setTextFavorite(textFavoriteBtn.dataset.id, true);
+      await reloadLibrary();
+      return;
+    }
+
+    const textUnfavoriteBtn = event.target.closest('.text-unfavorite-btn');
+    if (textUnfavoriteBtn) {
+      await setTextFavorite(textUnfavoriteBtn.dataset.id, false);
+      await reloadLibrary();
+      return;
+    }
+
     const downloadBtn = event.target.closest('.file-download-btn');
     if (downloadBtn) {
       await downloadFile(downloadBtn.dataset.path || '');
+      return;
+    }
+
+    const fileFavoriteBtn = event.target.closest('.file-favorite-btn');
+    if (fileFavoriteBtn) {
+      await setFileFavorite(fileFavoriteBtn.dataset.path || '', true);
+      await reloadLibrary();
+      return;
+    }
+
+    const fileUnfavoriteBtn = event.target.closest('.file-unfavorite-btn');
+    if (fileUnfavoriteBtn) {
+      await setFileFavorite(fileUnfavoriteBtn.dataset.path || '', false);
+      await reloadLibrary();
       return;
     }
 
@@ -389,84 +467,22 @@ function initGlobalActions() {
   });
 }
 
-function initDragTargets() {
-  document.querySelectorAll('.favorite-column-body').forEach((zone) => {
-    zone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      zone.classList.add('drag-over');
-    });
-    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-    zone.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      zone.classList.remove('drag-over');
-      const textId = getDraggedTextId(e);
-      if (!textId) return;
-      await ensureFavorite(textId, 1);
-      await reloadLibrary();
-    });
-  });
-
-  const libraryZone = document.getElementById('libraryDropZone');
-  if (libraryZone) {
-    libraryZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      libraryZone.classList.add('drag-over');
-    });
-    libraryZone.addEventListener('dragleave', () => libraryZone.classList.remove('drag-over'));
-    libraryZone.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      libraryZone.classList.remove('drag-over');
-      const textId = getDraggedTextId(e);
-      if (!textId) return;
-      await toggleFavorite(textId, false);
-      await reloadLibrary();
-    });
-  }
-}
-
-function bindDraggableCards() {
-  document.querySelectorAll('[draggable="true"][data-type="text"]').forEach((card) => {
-    card.addEventListener('dragstart', (e) => {
-      e.dataTransfer.effectAllowed = 'move';
-      const id = card.dataset.id || '';
-      e.dataTransfer.setData('text-id', id);
-      e.dataTransfer.setData('text/plain', id);
-    });
-  });
-}
-
-function getDraggedTextId(event) {
-  const transfer = event.dataTransfer;
-  if (!transfer) return '';
-  return transfer.getData('text-id') || transfer.getData('text/plain') || '';
-}
-
-async function ensureFavorite(textId, group) {
+async function setTextFavorite(textId, enabled) {
   const existing = favoritesState.find((f) => Number(f.id) === Number(textId));
-  if (!existing) {
-    const favRes = await fetch(`${API_PREFIX}/texts/${textId}/favorite`, { method: 'POST' });
-    if (!favRes.ok) {
-      alert('收藏失败');
-      return;
-    }
-  }
-
-  const moveRes = await fetch(`${API_PREFIX}/favorites/move`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: Number(textId), group: Number(group) }),
-  });
-
-  if (!moveRes.ok) alert('拖拽分栏失败');
-}
-
-async function toggleFavorite(textId, toFavorite) {
-  const existing = favoritesState.find((f) => Number(f.id) === Number(textId));
-  if (toFavorite && existing) return;
-  if (!toFavorite && !existing) return;
+  if (enabled && existing) return;
+  if (!enabled && !existing) return;
 
   const res = await fetch(`${API_PREFIX}/texts/${textId}/favorite`, { method: 'POST' });
-  if (!res.ok) alert('操作失败');
+  if (!res.ok) alert('收藏操作失败');
+}
+
+async function setFileFavorite(path, enabled) {
+  if (!path) return;
+  const data = new FormData();
+  data.append('path', path);
+  data.append('enabled', enabled ? 'true' : 'false');
+  const res = await fetch(`${API_PREFIX}/files/favorite`, { method: 'POST', body: data });
+  if (!res.ok) alert('收藏操作失败');
 }
 
 async function refreshTrash() {
@@ -482,17 +498,31 @@ function renderTrashTexts(texts) {
   if (!container) return;
   if (!texts.length) return container.innerHTML = '<div class="empty-state"><i class="bi bi-journal-x"></i><h4>没有已删除文本</h4></div>';
 
-  container.innerHTML = `<div class="card-grid three-col">${texts.map((t) => `
-    <div class="data-card">
-      <div class="data-card-content text-content">${escapeHtml(t.content || '')}</div>
-      <div class="data-card-actions">
-        <small class="text-muted"><i class="bi bi-clock"></i> ${escapeHtml(formatDisplayTime(t.created_at))}</small>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-success btn-sm" data-action="restore-text" data-id="${t.id}"><i class="bi bi-arrow-counterclockwise"></i> 还原</button>
-          <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete-trash-text" data-id="${t.id}"><i class="bi bi-x-circle"></i> 移出回收站</button>
-        </div>
-      </div>
-    </div>`).join('')}</div>`;
+  container.innerHTML = `
+    <div class="table-responsive">
+      <table class="table trash-table align-middle">
+        <thead>
+          <tr>
+            <th>内容</th>
+            <th class="trash-time-col">创建时间</th>
+            <th class="trash-action-col">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${texts.map((t) => `
+            <tr>
+              <td class="trash-content text-content">${escapeHtml(t.content || '')}</td>
+              <td class="text-muted">${escapeHtml(formatDisplayTime(t.created_at))}</td>
+              <td>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button type="button" class="btn btn-outline-success btn-sm" data-action="restore-text" data-id="${t.id}"><i class="bi bi-arrow-counterclockwise"></i> 还原</button>
+                  <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete-trash-text" data-id="${t.id}"><i class="bi bi-x-circle"></i> 移出回收站</button>
+                </div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function renderTrashFiles(files) {
@@ -500,17 +530,33 @@ function renderTrashFiles(files) {
   if (!container) return;
   if (!files.length) return container.innerHTML = '<div class="empty-state"><i class="bi bi-trash"></i><h4>没有已删除文件</h4></div>';
 
-  container.innerHTML = `<div class="card-grid three-col">${files.map((f) => `
-    <div class="data-card">
-      <div class="data-card-content">${escapeHtml(f.original_path || '')}</div>
-      <div class="data-card-actions">
-        <small class="text-muted"><i class="bi bi-hdd"></i> ${escapeHtml(f.size || '')}</small>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-success btn-sm" data-action="restore-file" data-id="${f.id}"><i class="bi bi-arrow-counterclockwise"></i> 还原</button>
-          <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete-trash-file" data-id="${f.id}"><i class="bi bi-x-circle"></i> 移出回收站</button>
-        </div>
-      </div>
-    </div>`).join('')}</div>`;
+  container.innerHTML = `
+    <div class="table-responsive">
+      <table class="table trash-table align-middle">
+        <thead>
+          <tr>
+            <th>文件</th>
+            <th class="trash-size-col">大小</th>
+            <th class="trash-time-col">删除时间</th>
+            <th class="trash-action-col">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${files.map((f) => `
+            <tr>
+              <td class="trash-content">${escapeHtml(f.original_path || '')}</td>
+              <td class="text-muted">${escapeHtml(f.size || '')}</td>
+              <td class="text-muted">${escapeHtml(formatDisplayTime(f.deleted_at))}</td>
+              <td>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button type="button" class="btn btn-outline-success btn-sm" data-action="restore-file" data-id="${f.id}"><i class="bi bi-arrow-counterclockwise"></i> 还原</button>
+                  <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete-trash-file" data-id="${f.id}"><i class="bi bi-x-circle"></i> 移出回收站</button>
+                </div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function processTextContent() {
