@@ -1,5 +1,6 @@
 ﻿const API_PREFIX = '/api';
 let currentPassword = '';
+let isCheckingPassword = false;
 
 let textsState = [];
 let filesState = [];
@@ -53,17 +54,21 @@ function checkLoginStatus() {
 }
 
 function addNumber(number) {
+  if (isCheckingPassword) return;
   currentPassword += number;
+  if (currentPassword.length > 6) {
+    currentPassword = currentPassword.slice(0, 6);
+  }
   updatePasswordDisplay();
-  if (currentPassword.length === 3) checkPassword();
-  if (currentPassword.length > 3) {
-    currentPassword = currentPassword.slice(0, 3);
-    updatePasswordDisplay();
+  if (currentPassword.length === 3 || currentPassword.length === 6) {
+    checkPassword();
   }
 }
 
 async function checkPassword() {
+  if (isCheckingPassword) return;
   const passcode = currentPassword;
+  isCheckingPassword = true;
   try {
     const res = await fetch(`${API_PREFIX}/auth/verify`, {
       method: 'POST',
@@ -78,6 +83,9 @@ async function checkPassword() {
       showMainContent();
       return;
     }
+    if (res.status === 202) {
+      return;
+    }
     if (res.status === 403) {
       alert('当前IP已被封禁7天');
       currentPassword = '';
@@ -86,6 +94,8 @@ async function checkPassword() {
     }
   } catch (_) {
     // fallback to unified error below
+  } finally {
+    isCheckingPassword = false;
   }
   alert('密码错误');
   currentPassword = '';
@@ -95,7 +105,7 @@ async function checkPassword() {
 function updatePasswordDisplay() {
   const display = document.getElementById('passwordDisplay');
   if (!display) return;
-  display.textContent = currentPassword ? '•'.repeat(currentPassword.length) : '••••';
+  display.textContent = currentPassword ? '•'.repeat(currentPassword.length) : '••••••';
 }
 
 function showMainContent() {

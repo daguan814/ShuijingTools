@@ -1,12 +1,15 @@
 import uuid
 from datetime import datetime, timedelta
 
-from app.db.database import db_manager
+try:
+    from app.db.database import db_manager
+except ModuleNotFoundError:
+    from db.database import db_manager
 
 
 class AuthService:
-    MAX_FAILS = 10
-    BAN_DAYS = 7
+    MAX_FAILS = 6
+    BAN_HOURS = 1
     SESSION_DAYS = 7
 
     def get_connection(self):
@@ -58,7 +61,7 @@ class AuthService:
             return {'ok': True, 'banned': False}
 
         new_fail_count = fail_count + 1
-        new_banned_until = now + timedelta(days=self.BAN_DAYS) if new_fail_count >= self.MAX_FAILS else None
+        new_banned_until = now + timedelta(hours=self.BAN_HOURS) if new_fail_count >= self.MAX_FAILS else None
         c.execute(
             """
             INSERT INTO auth_ip_guard (ip, fail_count, banned_until, updated_at)

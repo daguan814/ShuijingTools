@@ -5,10 +5,16 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request, send_file
 from werkzeug.exceptions import BadRequest
 
-from app.Service.auth_service import auth_service
-from app.Service.file_favorite_service import file_favorite_service
-from app.Service.text_service import text_service
-from app.Service.trash_service import trash_service
+try:
+    from app.Service.auth_service import auth_service
+    from app.Service.file_favorite_service import file_favorite_service
+    from app.Service.text_service import text_service
+    from app.Service.trash_service import trash_service
+except ModuleNotFoundError:
+    from Service.auth_service import auth_service
+    from Service.file_favorite_service import file_favorite_service
+    from Service.text_service import text_service
+    from Service.trash_service import trash_service
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = BASE_DIR / 'uploads'
@@ -89,6 +95,8 @@ def verify_auth():
     if result.get('banned'):
         return jsonify({'detail': 'ip banned 7 days'}), 403
     if not result.get('ok'):
+        if len(passcode) < 6:
+            return jsonify({'detail': 'pending'}), 202
         return jsonify({'detail': 'invalid passcode'}), 401
 
     token = auth_service.create_session(client_ip)
