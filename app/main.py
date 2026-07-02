@@ -3,12 +3,18 @@ from pathlib import Path
 
 from flask import Flask, jsonify, send_from_directory
 
-from Controller.api_router import api_bp
-from Service.auth_service import auth_service
-from db.database import db_manager
+try:
+    from app.Controller.api_router import api_bp
+    from app.Service.auth_service import auth_service
+    from app.db.database import db_manager
+except ModuleNotFoundError:
+    from Controller.api_router import api_bp
+    from Service.auth_service import auth_service
+    from db.database import db_manager
 
 BASE_DIR = Path(__file__).resolve().parent
-FRONTEND_DIR = BASE_DIR / "frontend"
+PROJECT_DIR = BASE_DIR.parent
+FRONTEND_DIR = PROJECT_DIR / "vue"
 
 app = Flask(__name__, static_folder=None)
 app.register_blueprint(api_bp)

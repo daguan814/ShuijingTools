@@ -6,3 +6,7 @@ __pycache__/
 .deploy_app.sftp
 uploads/
 SSL/
+Nginx/
+*.key
+*.pem
+*.crt
