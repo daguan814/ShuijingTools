@@ -505,9 +505,10 @@ async function openFilePreview(path) {
   }
 
   try {
-    const response = await api(
-      `/files/preview?path=${encodeURIComponent(path)}`
-    );
+    const response = await api("/files/preview/start", {
+      method: "POST",
+      json: { path },
+    });
     if (!response.ok) {
       const data = await safeJson(response);
       showToast(data?.detail || "打开文件失败。");
@@ -515,8 +516,9 @@ async function openFilePreview(path) {
       return;
     }
 
-    const blob = await response.blob();
-    const previewUrl = URL.createObjectURL(blob);
+    const data = await response.json();
+    const baseUrl = API_BASE || window.location.origin;
+    const previewUrl = new URL(data.url, baseUrl).href;
     previewWindow.location.href = previewUrl;
   } catch (_err) {
     previewWindow.close();

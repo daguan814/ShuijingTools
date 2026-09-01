@@ -22,5 +22,6 @@ SQLITE_DB_PATH = os.getenv(
 APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
 APP_PORT = int(os.getenv("APP_PORT", "8080"))
 MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(10 * 1024 * 1024 * 1024)))
+SECRET_KEY = os.getenv("SECRET_KEY", "shuijing-tools-preview-secret-change-me")
 
 DEFAULT_USERS = ["shuijing", "txt"]

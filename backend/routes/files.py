@@ -1,6 +1,7 @@
 import mimetypes
+from urllib.parse import quote
 
-from flask import Blueprint, g, jsonify, request, send_file
+from flask import Blueprint, current_app, g, jsonify, request, send_file
 
 from ..file_service import file_service
 
@@ -109,6 +110,43 @@ def preview_file():
         download_name=target.name,
         mimetype=mimetype,
     )
+
+
+@files_bp.route("/preview/start", methods=["POST"])
+def start_preview():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"detail": "invalid json"}), 400
+
+    relative_path = str(payload.get("path", ""))
+    try:
+        target = file_service.download_target(g.current_user, relative_path)
+    except FileNotFoundError:
+        return jsonify({"detail": "file not found"}), 404
+    except ValueError as exc:
+        return jsonify({"detail": str(exc)}), 400
+
+    normalized = file_service.normalize_relative_path(relative_path)
+    parent = normalized.rsplit("/", 1)[0] if "/" in normalized else ""
+    preview_name = normalized.rsplit("/", 1)[-1]
+    preview_token = current_app.preview_serializer.dumps(
+        {
+            "user_id": int(g.current_user["id"]),
+            "root": parent,
+        }
+    )
+
+    response = jsonify({"url": f"/preview/{quote(preview_name)}"})
+    response.set_cookie(
+        "preview_session",
+        preview_token,
+        max_age=3600,
+        path="/preview",
+        httponly=True,
+        samesite="Lax",
+        secure=request.is_secure,
+    )
+    return response
 
 
 @files_bp.route("/delete", methods=["POST"])
