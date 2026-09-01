@@ -1,5 +1,14 @@
 # 部署说明
 
+> 重要：更新代码时绝对不要删除以下目录：
+>
+> ```text
+> /vol2/1000/backup/ShuijingTools/storage
+> /vol2/1000/backup/docker/mysql
+> ```
+>
+> 这两个目录分别保存用户文件和 MySQL 数据。
+
 当前部署目标：
 
 - 服务器：`shuijing.site`
@@ -11,6 +20,8 @@
 
 ## 更新后端
 
+只同步代码，不使用 `--delete`：
+
 ```bash
 rsync -az --exclude='__pycache__' --exclude='*.pyc' \
   backend requirements.txt readme.md \
@@ -21,6 +32,8 @@ ssh -p 12222 shuijing@shuijing.site \
 ```
 
 ## 更新前端
+
+只同步 `frontend` 目录，不要动 `storage` 和 `docker/mysql`：
 
 ```bash
 rsync -az --exclude='.DS_Store' frontend \
