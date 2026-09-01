@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>水镜云盘</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="loginView" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">水镜云盘</div>
+      <h1>输入用户名进入存储空间</h1>
+      <p class="auth-subtitle">请输入已注册的用户名</p>
+
+      <form id="loginForm" class="login-form">
+        <input
+          id="usernameInput"
+          type="text"
+          autocomplete="username"
+          placeholder="请输入用户名"
+          maxlength="64"
+          required
+        >
+        <button type="submit" class="primary-btn">进入云盘</button>
+      </form>
+
+      <div id="loginError" class="login-error" role="alert"></div>
+    </div>
+  </div>
+
+  <div id="storageView" class="storage-layout hidden">
+    <header class="topbar">
+      <div class="topbar-brand">水镜云盘</div>
+      <div class="topbar-user">
+        <button id="logoutBtn" type="button" class="ghost-btn">退出</button>
+      </div>
+    </header>
+
+    <div class="storage-body">
+      <aside class="sidebar">
+        <div class="sidebar-heading">存储空间</div>
+        <button id="rootBtn" type="button" class="sidebar-link active">
+          <span class="sidebar-icon">📁</span>
+          <span>全部文件</span>
+        </button>
+        <p class="sidebar-hint">拖入文件或文件夹，自动上传到当前目录。</p>
+      </aside>
+
+      <main id="dropZone" class="main-content">
+        <div class="toolbar">
+          <div id="breadcrumb" class="breadcrumb" aria-label="当前位置"></div>
+          <div class="toolbar-actions">
+            <button id="uploadFileBtn" type="button" class="secondary-btn">上传文件</button>
+            <button id="uploadFolderBtn" type="button" class="secondary-btn">上传文件夹</button>
+            <button id="newFolderBtn" type="button" class="secondary-btn">新建文件夹</button>
+            <button id="refreshBtn" type="button" class="icon-only-btn" title="刷新">↻</button>
+          </div>
+        </div>
+
+        <div id="batchToolbar" class="batch-toolbar">
+          <span id="selectionCount" class="selection-count">已选择 0 项</span>
+          <div class="batch-actions">
+            <button id="batchDownloadBtn" type="button" class="secondary-btn" disabled>下载</button>
+            <button id="batchMoveBtn" type="button" class="secondary-btn" disabled>移动</button>
+            <button id="batchDeleteBtn" type="button" class="secondary-btn danger-btn" disabled>删除</button>
+          </div>
+        </div>
+
+        <div id="uploadProgress" class="upload-progress hidden">
+          <div class="progress-track">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+          <span id="progressText" class="progress-text">0%</span>
+        </div>
+
+        <div class="file-table-wrap">
+          <table class="file-table">
+            <thead>
+              <tr>
+                <th class="select-col"><input id="selectAllCheckbox" type="checkbox" aria-label="全选"></th>
+                <th>名称</th>
+                <th class="date-col">修改日期</th>
+                <th class="size-col">大小</th>
+              </tr>
+            </thead>
+            <tbody id="fileTableBody"></tbody>
+          </table>
+          <div id="emptyState" class="empty-state hidden">
+            <div class="empty-icon">🗂️</div>
+            <p>这里还没有文件，把文件或文件夹拖进来即可上传。</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <input id="fileInput" type="file" multiple hidden>
+  <input id="folderInput" type="file" webkitdirectory multiple hidden>
+
+  <div id="moveModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>选择目标文件夹</h3>
+        <button id="moveCloseBtn" type="button" class="icon-only-btn" title="关闭">×</button>
+      </div>
+      <div id="moveBreadcrumb" class="breadcrumb move-breadcrumb" aria-label="目标位置"></div>
+      <div id="moveFolderList" class="move-folder-list"></div>
+      <div class="modal-footer">
+        <span class="move-destination" id="moveDestinationLabel">目标：全部文件</span>
+        <div class="modal-actions">
+          <button id="moveCancelBtn" type="button" class="secondary-btn">取消</button>
+          <button id="moveConfirmBtn" type="button" class="primary-btn">移动到这里</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

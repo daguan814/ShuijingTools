@@ -5,6 +5,10 @@ __pycache__/
 *$py.class
 .deploy_app.sftp
 uploads/
+backend/storage/*
+!backend/storage/.gitkeep
+backend/*.db
+backend/*.db-*
 SSL/
 Nginx/
 *.key
