@@ -11,6 +11,9 @@ backend/*.db
 backend/*.db-*
 SSL/
 Nginx/
+!deploy/nginx/
+!deploy/nginx/conf.d/
+!deploy/nginx/conf.d/shuijing.site.conf
 *.key
 *.pem
 *.crt
