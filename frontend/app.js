@@ -10,6 +10,8 @@ let currentPath = "";
 let entries = [];
 let selectedPaths = new Set();
 let moveDestination = "";
+let textNotes = [];
+let activeView = "files";
 
 const PREVIEW_EXTENSIONS = new Set([
   "html",
@@ -93,6 +95,7 @@ function bindLogin() {
       localStorage.setItem("storage_user", JSON.stringify(currentUser));
       currentPath = "";
       showStorage();
+      await loadUserInfo();
       await loadCurrentDirectory();
     } catch (_err) {
       error.textContent = "无法连接服务，请稍后重试。";
@@ -105,9 +108,14 @@ function bindLogin() {
 
 function bindStorage() {
   document.getElementById("logoutBtn")?.addEventListener("click", logout);
-  document.getElementById("rootBtn")?.addEventListener("click", () =>
-    navigateTo("")
-  );
+  document.getElementById("rootBtn")?.addEventListener("click", () => {
+    switchView("files");
+    navigateTo("");
+  });
+  document.getElementById("textsBtn")?.addEventListener("click", () => {
+    switchView("texts");
+    loadTextNotes();
+  });
   document.getElementById("uploadFileBtn")?.addEventListener("click", () =>
     document.getElementById("fileInput").click()
   );
@@ -132,6 +140,11 @@ function bindStorage() {
   document
     .getElementById("batchDeleteBtn")
     ?.addEventListener("click", batchDeleteSelected);
+
+  const addTextForm = document.getElementById("addTextForm");
+  addTextForm?.addEventListener("submit", addTextNote);
+  const textCards = document.getElementById("textCards");
+  textCards?.addEventListener("click", handleTextCardClick);
 
   document.getElementById("fileInput")?.addEventListener("change", (event) => {
     collectInputFiles(event.target);
@@ -241,12 +254,40 @@ async function loadCurrentUser() {
     const data = await response.json();
     currentUser = data.user;
     localStorage.setItem("storage_user", JSON.stringify(currentUser));
+    renderUserInfo();
     showStorage();
     await loadCurrentDirectory();
   } catch (_err) {
     clearSession();
     showLogin();
   }
+}
+
+async function loadUserInfo() {
+  if (!token) return;
+  try {
+    const response = await api("/auth/me");
+    if (!response.ok) return;
+    const data = await response.json();
+    currentUser = data.user;
+    localStorage.setItem("storage_user", JSON.stringify(currentUser));
+    renderUserInfo();
+  } catch (_err) {
+    // ignore transient user info refresh errors
+  }
+}
+
+function renderUserInfo() {
+  const el = document.getElementById("userInfo");
+  if (!el) return;
+
+  const username = currentUser?.username || "";
+  const storage = currentUser?.storage;
+  let usage = "";
+  if (storage) {
+    usage = `已用 ${storage.used_display} / 磁盘 ${storage.disk_total_display}`;
+  }
+  el.textContent = [username, usage].filter(Boolean).join(" · ");
 }
 
 async function loadCurrentDirectory() {
@@ -411,6 +452,159 @@ async function navigateTo(path) {
     .forEach((button) => button.classList.toggle("active", path === ""));
 }
 
+function switchView(view) {
+  activeView = view;
+  document.getElementById("filesView")?.classList.toggle("hidden", view !== "files");
+  document.getElementById("textsView")?.classList.toggle("hidden", view !== "texts");
+  document.getElementById("rootBtn")?.classList.toggle("active", view === "files");
+  document.getElementById("textsBtn")?.classList.toggle("active", view === "texts");
+}
+
+async function loadTextNotes() {
+  if (!token) return;
+  try {
+    const response = await api("/texts");
+    if (!response.ok) return;
+    textNotes = await response.json();
+    renderTextCards();
+  } catch (_err) {
+    showToast("读取文本失败。");
+  }
+}
+
+function renderTextCards() {
+  const container = document.getElementById("textCards");
+  if (!container) return;
+
+  if (!textNotes.length) {
+    container.innerHTML = `<div class="text-empty">还没有保存文本。</div>`;
+    return;
+  }
+
+  container.innerHTML = textNotes
+    .map(
+      (note) => `
+        <article class="text-card" data-id="${note.id}">
+          <div class="text-card-meta">${escapeHtml(formatDate(note.created_at))}</div>
+          <div class="text-card-content" data-content="${escapeAttr(note.content)}"></div>
+          <div class="text-card-actions">
+            <button type="button" class="row-btn copy-text-btn" data-content="${escapeAttr(note.content)}">复制</button>
+            <button type="button" class="row-btn danger delete-text-btn" data-id="${note.id}">删除</button>
+          </div>
+        </article>`
+    )
+    .join("");
+
+  container.querySelectorAll(".text-card-content").forEach((el) => {
+    linkifyTextElement(el);
+  });
+}
+
+function linkifyTextElement(el) {
+  const raw = el.dataset.content || "";
+  el.textContent = "";
+  const fragment = document.createDocumentFragment();
+  const regex = /(https?:\/\/[^\s<]+)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(raw)) !== null) {
+    if (match.index > lastIndex) {
+      fragment.appendChild(document.createTextNode(raw.slice(lastIndex, match.index)));
+    }
+    const link = document.createElement("a");
+    link.href = match[0];
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = match[0];
+    fragment.appendChild(link);
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < raw.length) {
+    fragment.appendChild(document.createTextNode(raw.slice(lastIndex)));
+  }
+  el.appendChild(fragment);
+}
+
+async function addTextNote(event) {
+  event.preventDefault();
+  const input = document.getElementById("textContent");
+  const content = input.value.trim();
+  if (!content) return;
+
+  try {
+    const response = await api("/texts", {
+      method: "POST",
+      json: { content },
+    });
+    if (!response.ok) {
+      const data = await safeJson(response);
+      showToast(data?.detail || "保存失败。");
+      return;
+    }
+    input.value = "";
+    await loadTextNotes();
+    showToast("文本已保存。");
+  } catch (_err) {
+    showToast("保存失败。");
+  }
+}
+
+async function handleTextCardClick(event) {
+  const copyButton = event.target.closest(".copy-text-btn");
+  if (copyButton) {
+    copyText(copyButton.dataset.content || "");
+    return;
+  }
+
+  const deleteButton = event.target.closest(".delete-text-btn");
+  if (!deleteButton) return;
+
+  if (!window.confirm("确认删除这条文本吗？")) return;
+  try {
+    const response = await api(`/texts/${deleteButton.dataset.id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      showToast("删除失败。");
+      return;
+    }
+    await loadTextNotes();
+    showToast("已删除。");
+  } catch (_err) {
+    showToast("删除失败。");
+  }
+}
+
+function copyText(content) {
+  if (!content) return;
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(content).then(
+      () => showToast("已复制"),
+      () => fallbackCopyText(content)
+    );
+    return;
+  }
+  fallbackCopyText(content);
+}
+
+function fallbackCopyText(content) {
+  const textarea = document.createElement("textarea");
+  textarea.value = content;
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand("copy");
+    showToast("已复制");
+  } catch (_err) {
+    showToast("复制失败");
+  }
+  document.body.removeChild(textarea);
+}
+
 async function createFolder() {
   const name = window.prompt("输入新文件夹名称");
   if (name === null) return;
@@ -429,6 +623,7 @@ async function createFolder() {
     }
     showToast("文件夹已创建。");
     await loadCurrentDirectory();
+    await loadUserInfo();
   } catch (_err) {
     showToast("创建文件夹失败。");
   }
@@ -459,6 +654,7 @@ async function batchDeleteSelected() {
     }
     selectedPaths.clear();
     await loadCurrentDirectory();
+    await loadUserInfo();
   } catch (_err) {
     showToast("删除失败。");
   }
@@ -636,6 +832,7 @@ async function confirmMove() {
     selectedPaths.clear();
     closeMoveModal();
     await loadCurrentDirectory();
+    await loadUserInfo();
   } catch (_err) {
     showToast("移动失败。");
   }
@@ -750,6 +947,7 @@ function uploadFiles(files, relativePaths) {
     if (xhr.status >= 200 && xhr.status < 300) {
       showToast("上传完成。");
       await loadCurrentDirectory();
+      await loadUserInfo();
     } else {
       let message = "上传失败。";
       try {

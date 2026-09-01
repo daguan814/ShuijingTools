@@ -1,4 +1,5 @@
 import io
+import os
 import shutil
 import zipfile
 from datetime import datetime, timezone
@@ -75,18 +76,44 @@ class FileService:
         return str(absolute.relative_to(root)).replace("\\", "/")
 
     @staticmethod
-    def _entry_info(user, absolute: Path, relative_path: str) -> dict:
+    def _directory_size(path: Path) -> int:
+        total = 0
+        for dirpath, _dirnames, filenames in os.walk(path):
+            for filename in filenames:
+                file_path = Path(dirpath) / filename
+                try:
+                    if not file_path.is_symlink():
+                        total += file_path.stat().st_size
+                except OSError:
+                    continue
+        return total
+
+    def _entry_info(self, user, absolute: Path, relative_path: str) -> dict:
         stat = absolute.stat()
         is_dir = absolute.is_dir()
+        size = self._directory_size(absolute) if is_dir else stat.st_size
         return {
             "name": absolute.name,
             "path": relative_path,
             "type": "folder" if is_dir else "file",
-            "size": 0 if is_dir else stat.st_size,
-            "size_display": "--" if is_dir else format_size(stat.st_size),
+            "size": size,
+            "size_display": format_size(size),
             "modified_at": datetime.fromtimestamp(
                 stat.st_mtime, tz=timezone.utc
             ).isoformat(),
+        }
+
+    def storage_usage(self, user) -> dict:
+        root = self.user_root(user)
+        total, _used, free = shutil.disk_usage(root)
+        used_by_user = self._directory_size(root)
+        return {
+            "used": used_by_user,
+            "used_display": format_size(used_by_user),
+            "disk_total": total,
+            "disk_total_display": format_size(total),
+            "disk_free": free,
+            "disk_free_display": format_size(free),
         }
 
     def list_entries(self, user, relative_path: str):

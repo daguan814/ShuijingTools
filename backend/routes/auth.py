@@ -1,6 +1,7 @@
 from flask import Blueprint, g, jsonify, request
 
 from ..auth_service import auth_service
+from ..file_service import file_service
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -25,7 +26,9 @@ def login():
 
 @auth_bp.route("/me", methods=["GET"])
 def me():
-    return jsonify({"user": auth_service.public_user(g.current_user)})
+    user = auth_service.public_user(g.current_user)
+    user["storage"] = file_service.storage_usage(g.current_user)
+    return jsonify({"user": user})
 
 
 @auth_bp.route("/logout", methods=["POST"])

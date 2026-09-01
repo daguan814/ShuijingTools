@@ -33,6 +33,7 @@
     <header class="topbar">
       <div class="topbar-brand">水镜云盘</div>
       <div class="topbar-user">
+        <span id="userInfo" class="user-info"></span>
         <button id="logoutBtn" type="button" class="ghost-btn">退出</button>
       </div>
     </header>
@@ -44,11 +45,16 @@
           <span class="sidebar-icon">📁</span>
           <span>全部文件</span>
         </button>
+        <button id="textsBtn" type="button" class="sidebar-link">
+          <span class="sidebar-icon">📝</span>
+          <span>全部文本</span>
+        </button>
         <p class="sidebar-hint">拖入文件或文件夹，自动上传到当前目录。</p>
       </aside>
 
       <main id="dropZone" class="main-content">
-        <div class="toolbar">
+        <section id="filesView" class="page-section">
+          <div class="toolbar">
           <div id="breadcrumb" class="breadcrumb" aria-label="当前位置"></div>
           <div class="toolbar-actions">
             <button id="uploadFileBtn" type="button" class="secondary-btn">上传文件</button>
@@ -56,41 +62,58 @@
             <button id="newFolderBtn" type="button" class="secondary-btn">新建文件夹</button>
             <button id="refreshBtn" type="button" class="icon-only-btn" title="刷新">↻</button>
           </div>
-        </div>
-
-        <div id="batchToolbar" class="batch-toolbar">
-          <span id="selectionCount" class="selection-count">已选择 0 项</span>
-          <div class="batch-actions">
-            <button id="batchDownloadBtn" type="button" class="secondary-btn" disabled>下载</button>
-            <button id="batchMoveBtn" type="button" class="secondary-btn" disabled>移动</button>
-            <button id="batchDeleteBtn" type="button" class="secondary-btn danger-btn" disabled>删除</button>
           </div>
-        </div>
 
-        <div id="uploadProgress" class="upload-progress hidden">
-          <div class="progress-track">
-            <div id="progressBar" class="progress-bar"></div>
+          <div id="batchToolbar" class="batch-toolbar">
+            <span id="selectionCount" class="selection-count">已选择 0 项</span>
+            <div class="batch-actions">
+              <button id="batchDownloadBtn" type="button" class="secondary-btn" disabled>下载</button>
+              <button id="batchMoveBtn" type="button" class="secondary-btn" disabled>移动</button>
+              <button id="batchDeleteBtn" type="button" class="secondary-btn danger-btn" disabled>删除</button>
+            </div>
           </div>
-          <span id="progressText" class="progress-text">0%</span>
-        </div>
 
-        <div class="file-table-wrap">
-          <table class="file-table">
-            <thead>
-              <tr>
-                <th class="select-col"><input id="selectAllCheckbox" type="checkbox" aria-label="全选"></th>
-                <th>名称</th>
-                <th class="date-col">修改日期</th>
-                <th class="size-col">大小</th>
-              </tr>
-            </thead>
-            <tbody id="fileTableBody"></tbody>
-          </table>
-          <div id="emptyState" class="empty-state hidden">
-            <div class="empty-icon">🗂️</div>
-            <p>这里还没有文件，把文件或文件夹拖进来即可上传。</p>
+          <div id="uploadProgress" class="upload-progress hidden">
+            <div class="progress-track">
+              <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <span id="progressText" class="progress-text">0%</span>
           </div>
-        </div>
+
+          <div class="file-table-wrap">
+            <table class="file-table">
+              <thead>
+                <tr>
+                  <th class="select-col"><input id="selectAllCheckbox" type="checkbox" aria-label="全选"></th>
+                  <th>名称</th>
+                  <th class="date-col">修改日期</th>
+                  <th class="size-col">大小</th>
+                </tr>
+              </thead>
+              <tbody id="fileTableBody"></tbody>
+            </table>
+            <div id="emptyState" class="empty-state hidden">
+              <div class="empty-icon">🗂️</div>
+              <p>这里还没有文件，把文件或文件夹拖进来即可上传。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="textsView" class="page-section hidden">
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <h2>全部文本</h2>
+              <p>输入文本保存成卡片。如果内容是网址，点击后可以直接打开。</p>
+            </div>
+            <form id="addTextForm" class="text-form">
+              <textarea id="textContent" rows="5" placeholder="输入文本或网址..." required></textarea>
+              <div class="text-form-actions">
+                <button type="submit" class="primary-btn">保存文本</button>
+              </div>
+            </form>
+          </div>
+          <div id="textCards" class="text-card-grid"></div>
+        </section>
       </main>
     </div>
   </div>

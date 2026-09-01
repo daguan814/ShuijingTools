@@ -169,6 +169,13 @@ button {
   gap: 12px;
 }
 
+.user-info {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
 .username-chip {
   padding: 6px 11px;
   border-radius: 999px;
@@ -240,6 +247,10 @@ button {
   padding: 20px 24px 40px;
   min-width: 0;
   transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.page-section {
+  min-width: 0;
 }
 
 .main-content.drag-over {
@@ -546,6 +557,93 @@ button {
 
 .empty-state p {
   margin: 0;
+}
+
+.panel-card {
+  margin-bottom: 18px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(30, 40, 80, 0.05);
+}
+
+.panel-card-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+
+.panel-card-header p {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.text-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fbfcff;
+  outline: none;
+  resize: vertical;
+}
+
+.text-form textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(90, 103, 216, 0.13);
+}
+
+.text-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.text-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.text-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(30, 40, 80, 0.05);
+}
+
+.text-card-meta {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.text-card-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.text-card-content a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.text-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.text-empty {
+  padding: 40px 16px;
+  color: var(--muted);
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 13px;
 }
 
 .modal-backdrop {
