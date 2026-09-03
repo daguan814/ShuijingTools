@@ -12,6 +12,7 @@ let selectedPaths = new Set();
 let moveDestination = "";
 let textNotes = [];
 let logEntries = [];
+let activeLogFilter = "all";
 let activeView = "files";
 
 const PREVIEW_EXTENSIONS = new Set([
@@ -212,6 +213,12 @@ function bindStorage() {
   const textCards = document.getElementById("textCards");
   textCards?.addEventListener("click", handleTextCardClick);
   document.getElementById("refreshLogsBtn")?.addEventListener("click", loadLogs);
+  document.getElementById("logFilters")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-log-filter]");
+    if (!button) return;
+    activeLogFilter = button.dataset.logFilter || "all";
+    renderLogs();
+  });
 
   document.getElementById("fileInput")?.addEventListener("change", (event) => {
     collectInputFiles(event.target);
@@ -548,22 +555,53 @@ async function loadLogs() {
 }
 
 function renderLogs() {
-  const container = document.getElementById("logCards");
-  if (!container) return;
-  if (!logEntries.length) {
-    container.innerHTML = `<div class="text-empty">还没有日志记录。</div>`;
-    return;
-  }
+  const tableBody = document.getElementById("logTableBody");
+  const empty = document.getElementById("logEmpty");
+  if (!tableBody || !empty) return;
 
-  container.innerHTML = logEntries
+  document.querySelectorAll("[data-log-filter]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.logFilter === activeLogFilter);
+  });
+
+  const visibleEntries = logEntries.filter(
+    (entry) => activeLogFilter === "all" || getLogCategory(entry.content) === activeLogFilter
+  );
+  empty.classList.toggle("hidden", visibleEntries.length > 0);
+  tableBody.innerHTML = visibleEntries
     .map(
-      (entry) => `
-        <article class="text-card" data-id="${entry.id}">
-          <div class="text-card-meta">${escapeHtml(formatDate(entry.created_at))}</div>
-          <div class="text-card-content">${escapeHtml(entry.content)}</div>
-        </article>`
+      (entry) => {
+        const category = getLogCategory(entry.content);
+        const label = getLogCategoryLabel(category);
+        return `
+          <tr>
+            <td class="log-time">${escapeHtml(formatDate(entry.created_at))}</td>
+            <td><span class="log-type log-type--${category}">${label}</span></td>
+            <td class="log-content">${escapeHtml(entry.content)}</td>
+          </tr>`;
+      }
     )
     .join("");
+}
+
+function getLogCategory(content = "") {
+  const action = String(content).split("：", 1)[0];
+  if (action.startsWith("上传")) return "upload";
+  if (action.startsWith("新建")) return "create";
+  if (action.startsWith("下载") || action.startsWith("批量下载")) return "download";
+  if (action.startsWith("移动")) return "move";
+  if (action.startsWith("删除")) return "delete";
+  return "other";
+}
+
+function getLogCategoryLabel(category) {
+  return {
+    upload: "上传",
+    create: "新建",
+    download: "下载",
+    move: "移动",
+    delete: "删除",
+    other: "其他",
+  }[category] || "其他";
 }
 
 async function loadTextNotes() {

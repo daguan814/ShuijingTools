@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
-  <link rel="stylesheet" href="/styles.css?v=20260903-6">
+  <link rel="stylesheet" href="/styles.css?v=20260903-7">
 </head>
 <body>
   <div id="loginView" class="auth-screen">
@@ -49,6 +49,7 @@
           <span class="sidebar-icon">📝</span>
           <span>全部文本</span>
         </button>
+        <div class="sidebar-heading sidebar-heading--tools">工具</div>
         <button id="logsBtn" type="button" class="sidebar-link">
           <span class="sidebar-icon">📒</span>
           <span>日志</span>
@@ -133,7 +134,27 @@
               <button id="refreshLogsBtn" type="button" class="secondary-btn">刷新日志</button>
             </div>
           </div>
-          <div id="logCards" class="text-card-grid"></div>
+          <div id="logFilters" class="log-filters" aria-label="日志类型筛选">
+            <button type="button" class="log-filter active" data-log-filter="all">全部</button>
+            <button type="button" class="log-filter" data-log-filter="upload">上传</button>
+            <button type="button" class="log-filter" data-log-filter="create">新建</button>
+            <button type="button" class="log-filter" data-log-filter="download">下载</button>
+            <button type="button" class="log-filter" data-log-filter="move">移动</button>
+            <button type="button" class="log-filter" data-log-filter="delete">删除</button>
+          </div>
+          <div class="log-table-wrap">
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th class="log-time-col">操作时间</th>
+                  <th class="log-type-col">类型</th>
+                  <th>操作内容</th>
+                </tr>
+              </thead>
+              <tbody id="logTableBody"></tbody>
+            </table>
+            <div id="logEmpty" class="text-empty hidden">还没有符合条件的日志记录。</div>
+          </div>
         </section>
       </main>
     </div>
@@ -162,6 +183,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/app.js?v=20260903-6"></script>
+  <script src="/app.js?v=20260903-7"></script>
 </body>
 </html>

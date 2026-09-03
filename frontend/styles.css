@@ -218,6 +218,11 @@ button {
   text-transform: uppercase;
 }
 
+.sidebar-heading--tools {
+  margin-top: 26px;
+  margin-bottom: 10px;
+}
+
 .sidebar-link {
   display: flex;
   align-items: center;
@@ -654,6 +659,103 @@ button {
   margin-bottom: 0;
 }
 
+.log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.log-filter {
+  padding: 8px 15px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.log-filter:hover,
+.log-filter.active {
+  border-color: rgba(90, 103, 216, 0.35);
+  background: var(--hover);
+  color: var(--primary);
+}
+
+.log-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(30, 40, 80, 0.05);
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.log-table th,
+.log-table td {
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.log-table th {
+  background: #fbfcff;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.log-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.log-table tbody tr:hover {
+  background: #fbfcff;
+}
+
+.log-time-col {
+  width: 180px;
+}
+
+.log-type-col {
+  width: 90px;
+}
+
+.log-time {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.log-content {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.log-type {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #eef1f8;
+  color: #5d667a;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.log-type--upload { background: #e8f7ef; color: #25845b; }
+.log-type--create { background: #edf0ff; color: #5365d8; }
+.log-type--download { background: #e8f5fb; color: #237a9d; }
+.log-type--move { background: #fff3df; color: #a86613; }
+.log-type--delete { background: #ffebed; color: #c24150; }
+
+.log-table-wrap .text-empty {
+  margin: 16px;
+}
+
 .text-form textarea {
   width: 100%;
   padding: 12px 14px;
@@ -868,5 +970,14 @@ button {
   .file-table th:nth-child(3),
   .file-table th:nth-child(4) {
     display: none;
+  }
+
+  .log-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .log-table {
+    min-width: 620px;
   }
 }
