@@ -6,8 +6,24 @@ from flask import Blueprint, after_this_request, current_app, g, jsonify, reques
 from itsdangerous import BadSignature, SignatureExpired
 
 from ..file_service import file_service
+from ..log_service import log_service
 
 files_bp = Blueprint("files", __name__, url_prefix="/api/files")
+
+
+def _summarize_paths(paths, limit=6):
+    clean = [str(path) for path in paths if path]
+    shown = "、".join(clean[:limit])
+    if len(clean) > limit:
+        shown += f" 等（共 {len(clean)} 项）"
+    return shown
+
+
+def _record_action(user_id, action, detail):
+    try:
+        log_service.add_log(user_id, f"{action}：{detail}")
+    except Exception:
+        current_app.logger.exception("Failed to record user file operation")
 
 
 @files_bp.route("", methods=["GET"])
@@ -40,6 +56,7 @@ def upload_files():
         return jsonify({"detail": "relative_paths count does not match files"}), 400
 
     uploaded = []
+    uploaded_relative_paths = []
     try:
         for file_storage, relative_name in zip(files, relative_paths):
             if not file_storage or not file_storage.filename:
@@ -54,10 +71,38 @@ def upload_files():
                     file_storage,
                 )
             )
+            uploaded_relative_paths.append(str(relative_name).replace("\\", "/"))
     except ValueError as exc:
         return jsonify({"detail": str(exc)}), 400
     except OSError as exc:
         return jsonify({"detail": str(exc)}), 500
+
+    folder_roots = sorted(
+        {path.split("/", 1)[0] for path in uploaded_relative_paths if "/" in path}
+    )
+    direct_files = [
+        item["path"]
+        for item, source in zip(uploaded, uploaded_relative_paths)
+        if "/" not in source
+    ]
+    if direct_files:
+        _record_action(g.current_user["id"], "上传文件", _summarize_paths(direct_files))
+    for folder in folder_roots:
+        count = sum(
+            1
+            for path in uploaded_relative_paths
+            if path == folder or path.startswith(f"{folder}/")
+        )
+        folder_path = "/".join(
+            part
+            for part in (file_service.normalize_relative_path(parent_path), folder)
+            if part
+        )
+        _record_action(
+            g.current_user["id"],
+            "上传文件夹",
+            f"{folder_path}（{count} 个文件）",
+        )
 
     return jsonify({"uploaded": uploaded})
 
@@ -79,6 +124,7 @@ def make_directory():
     except ValueError as exc:
         return jsonify({"detail": str(exc)}), 400
 
+    _record_action(g.current_user["id"], "新建文件夹", created_path)
     return jsonify({"path": created_path}), 201
 
 
@@ -92,6 +138,7 @@ def download_file():
     except ValueError as exc:
         return jsonify({"detail": str(exc)}), 400
 
+    _record_action(g.current_user["id"], "下载文件", relative_path)
     return send_file(target, as_attachment=True, download_name=target.name)
 
 
@@ -160,12 +207,15 @@ def delete_path():
         relative_path = request.form.get("path", "")
 
     try:
+        target = file_service.resolve_user_path(g.current_user, relative_path)
+        target_type = "文件夹" if target.is_dir() else "文件"
         file_service.delete(g.current_user, relative_path)
     except FileNotFoundError:
         return jsonify({"detail": "path not found"}), 404
     except ValueError as exc:
         return jsonify({"detail": str(exc)}), 400
 
+    _record_action(g.current_user["id"], f"删除{target_type}", relative_path)
     return "", 204
 
 
@@ -179,7 +229,24 @@ def batch_delete():
     if not isinstance(paths, list) or not paths:
         return jsonify({"detail": "paths must be a non-empty list"}), 400
 
+    path_types = {}
+    for raw_path in paths:
+        try:
+            normalized_path = file_service.normalize_relative_path(str(raw_path))
+            target = file_service.resolve_user_path(g.current_user, normalized_path)
+            path_types[normalized_path] = "文件夹" if target.is_dir() else "文件"
+        except (FileNotFoundError, ValueError):
+            pass
+
     results = file_service.delete_paths(g.current_user, paths)
+    for result in results:
+        if result.get("deleted"):
+            path = str(result.get("path", ""))
+            _record_action(
+                g.current_user["id"],
+                f"删除{path_types.get(path, '项目')}",
+                path,
+            )
     return jsonify({"results": results})
 
 
@@ -205,6 +272,12 @@ def move_paths():
     except ValueError as exc:
         return jsonify({"detail": str(exc)}), 400
 
+    for item in moved:
+        _record_action(
+            g.current_user["id"],
+            "移动",
+            f"{item['path']} → {item['target']}",
+        )
     return jsonify({"moved": moved})
 
 
@@ -258,6 +331,7 @@ def download_with_ticket(ticket: str):
         if len(paths) == 1:
             target = file_service.resolve_user_path(user, paths[0])
             if target.is_file():
+                _record_action(user["id"], "下载文件", paths[0])
                 return send_file(target, as_attachment=True, download_name=target.name, conditional=True)
 
         archive_path = file_service.build_download_archive(user, paths, str(payload.get("base", "")))
@@ -274,4 +348,6 @@ def download_with_ticket(ticket: str):
             pass
         return response
 
+    action = "下载文件夹" if len(paths) == 1 else "批量下载"
+    _record_action(user["id"], action, _summarize_paths(paths))
     return send_file(archive_path, as_attachment=True, download_name="selected_files.zip", mimetype="application/zip", conditional=True)

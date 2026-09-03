@@ -643,6 +643,17 @@ button {
   color: var(--muted);
 }
 
+.log-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.log-header p {
+  margin-bottom: 0;
+}
+
 .text-form textarea {
   width: 100%;
   padding: 12px 14px;

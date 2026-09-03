@@ -211,8 +211,7 @@ function bindStorage() {
   addTextForm?.addEventListener("submit", addTextNote);
   const textCards = document.getElementById("textCards");
   textCards?.addEventListener("click", handleTextCardClick);
-  document.getElementById("addLogForm")?.addEventListener("submit", addLog);
-  document.getElementById("logCards")?.addEventListener("click", handleLogCardClick);
+  document.getElementById("refreshLogsBtn")?.addEventListener("click", loadLogs);
 
   document.getElementById("fileInput")?.addEventListener("change", (event) => {
     collectInputFiles(event.target);
@@ -562,56 +561,9 @@ function renderLogs() {
         <article class="text-card" data-id="${entry.id}">
           <div class="text-card-meta">${escapeHtml(formatDate(entry.created_at))}</div>
           <div class="text-card-content">${escapeHtml(entry.content)}</div>
-          <div class="text-card-actions">
-            <button type="button" class="row-btn copy-log-btn" data-content="${escapeAttr(entry.content)}">复制</button>
-            <button type="button" class="row-btn danger delete-log-btn" data-id="${entry.id}">删除</button>
-          </div>
         </article>`
     )
     .join("");
-}
-
-async function addLog(event) {
-  event.preventDefault();
-  const input = document.getElementById("logContent");
-  const content = input.value.trim();
-  if (!content) return;
-  try {
-    const response = await api("/logs", { method: "POST", json: { content } });
-    if (!response.ok) {
-      const data = await safeJson(response);
-      showToast(data?.detail || "保存日志失败。");
-      return;
-    }
-    input.value = "";
-    await loadLogs();
-    showToast("日志已保存。");
-  } catch (_err) {
-    showToast("保存日志失败。");
-  }
-}
-
-async function handleLogCardClick(event) {
-  const copyButton = event.target.closest(".copy-log-btn");
-  if (copyButton) {
-    copyText(copyButton.dataset.content || "");
-    return;
-  }
-
-  const deleteButton = event.target.closest(".delete-log-btn");
-  if (!deleteButton) return;
-  if (!window.confirm("确认删除这条日志吗？")) return;
-  try {
-    const response = await api(`/logs/${deleteButton.dataset.id}`, { method: "DELETE" });
-    if (!response.ok) {
-      showToast("删除日志失败。");
-      return;
-    }
-    await loadLogs();
-    showToast("日志已删除。");
-  } catch (_err) {
-    showToast("删除日志失败。");
-  }
 }
 
 async function loadTextNotes() {

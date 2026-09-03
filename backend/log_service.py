@@ -45,19 +45,4 @@ class LogService:
         conn.close()
         return log_id
 
-    def delete_log(self, user_id: int, log_id: int) -> bool:
-        ph = db_manager.placeholder()
-        conn = db_manager.get_connection()
-        cursor = db_manager.cursor(conn)
-        cursor.execute(
-            f"DELETE FROM user_logs WHERE id = {ph} AND user_id = {ph}",
-            (log_id, user_id),
-        )
-        conn.commit()
-        affected = cursor.rowcount
-        cursor.close()
-        conn.close()
-        return affected > 0
-
-
 log_service = LogService()

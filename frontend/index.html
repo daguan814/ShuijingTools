@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
-  <link rel="stylesheet" href="/styles.css?v=20260903-5">
+  <link rel="stylesheet" href="/styles.css?v=20260903-6">
 </head>
 <body>
   <div id="loginView" class="auth-screen">
@@ -56,7 +56,7 @@
         <p class="sidebar-hint">拖入文件或文件夹，自动上传到当前目录。</p>
         <div class="sidebar-footer">
           <div>v1.1</div>
-          <div>design by 云梦职业教育中心 鲁和丰</div>
+          <div>design by 云梦职业教育中心 teacher.lu</div>
         </div>
       </aside>
 
@@ -125,16 +125,13 @@
 
         <section id="logsView" class="page-section hidden">
           <div class="panel-card">
-            <div class="panel-card-header">
-              <h2>日志</h2>
-              <p>记录当前用户的工作内容，日志仅对当前用户可见。</p>
-            </div>
-            <form id="addLogForm" class="text-form">
-              <textarea id="logContent" rows="5" placeholder="输入日志内容..." required></textarea>
-              <div class="text-form-actions">
-                <button type="submit" class="primary-btn">保存日志</button>
+            <div class="panel-card-header log-header">
+              <div>
+                <h2>操作日志</h2>
+                <p>自动记录当前用户的文件操作和操作时间。</p>
               </div>
-            </form>
+              <button id="refreshLogsBtn" type="button" class="secondary-btn">刷新日志</button>
+            </div>
           </div>
           <div id="logCards" class="text-card-grid"></div>
         </section>
@@ -165,6 +162,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/app.js?v=20260903-5"></script>
+  <script src="/app.js?v=20260903-6"></script>
 </body>
 </html>
