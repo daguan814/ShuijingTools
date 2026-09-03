@@ -1,5 +1,4 @@
 import sqlite3
-import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -189,7 +188,7 @@ class DatabaseManager:
             """
         )
         for username in DEFAULT_USERS:
-            storage_key = uuid.uuid4().hex
+            storage_key = username
             cursor.execute(insert_sql, (username, storage_key, now, now))
 
         conn.commit()

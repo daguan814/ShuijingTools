@@ -17,6 +17,7 @@
 - 后端：`systemd` 服务 `shuijing-tools.service`，监听 `127.0.0.1:18080`
 - 前端：由 `shuijing-nginx` 容器提供，挂载目录 `frontend`
 - 对外入口：`https://shuijing.site:8080`
+- 敏感配置：项目根目录 `.env`，权限必须为 `600`，禁止提交 Git
 
 ## 更新后端
 

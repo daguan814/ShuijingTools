@@ -1,7 +1,9 @@
+import os
 import mimetypes
 from urllib.parse import quote
 
-from flask import Blueprint, current_app, g, jsonify, request, send_file
+from flask import Blueprint, after_this_request, current_app, g, jsonify, request, send_file
+from itsdangerous import BadSignature, SignatureExpired
 
 from ..file_service import file_service
 
@@ -206,8 +208,8 @@ def move_paths():
     return jsonify({"moved": moved})
 
 
-@files_bp.route("/batch-download", methods=["POST"])
-def batch_download():
+@files_bp.route("/download/prepare", methods=["POST"])
+def prepare_download():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"detail": "invalid json"}), 400
@@ -217,18 +219,59 @@ def batch_download():
     if not isinstance(paths, list) or not paths:
         return jsonify({"detail": "paths must be a non-empty list"}), 400
 
+    normalized = []
     try:
-        buffer = file_service.build_download_archive(
-            g.current_user,
-            paths,
-            base_path,
-        )
+        for path in paths:
+            rel = file_service.normalize_relative_path(path)
+            if not rel:
+                raise ValueError("cannot download user root")
+            target = file_service.resolve_user_path(g.current_user, rel)
+            if not target.exists():
+                raise FileNotFoundError(rel)
+            normalized.append(rel)
+    except FileNotFoundError:
+        return jsonify({"detail": "file not found"}), 404
     except ValueError as exc:
         return jsonify({"detail": str(exc)}), 400
 
-    return send_file(
-        buffer,
-        as_attachment=True,
-        download_name="selected_files.zip",
-        mimetype="application/zip",
+    ticket = current_app.download_serializer.dumps(
+        {"user_id": int(g.current_user["id"]), "paths": normalized, "base": base_path}
     )
+    return jsonify({"url": f"/api/files/download/ticket/{quote(ticket)}"})
+
+
+@files_bp.route("/download/ticket/<path:ticket>", methods=["GET"])
+def download_with_ticket(ticket: str):
+    try:
+        payload = current_app.download_serializer.loads(ticket, max_age=300)
+    except (SignatureExpired, BadSignature):
+        return jsonify({"detail": "download link expired"}), 401
+
+    from ..database import db_manager
+
+    user = db_manager.find_user_by_id(int(payload.get("user_id", 0)))
+    paths = payload.get("paths")
+    if not user or not isinstance(paths, list) or not paths:
+        return jsonify({"detail": "invalid download link"}), 400
+
+    try:
+        if len(paths) == 1:
+            target = file_service.resolve_user_path(user, paths[0])
+            if target.is_file():
+                return send_file(target, as_attachment=True, download_name=target.name, conditional=True)
+
+        archive_path = file_service.build_download_archive(user, paths, str(payload.get("base", "")))
+    except FileNotFoundError:
+        return jsonify({"detail": "file not found"}), 404
+    except (OSError, ValueError) as exc:
+        return jsonify({"detail": str(exc)}), 400
+
+    @after_this_request
+    def remove_archive(response):
+        try:
+            os.unlink(archive_path)
+        except OSError:
+            pass
+        return response
+
+    return send_file(archive_path, as_attachment=True, download_name="selected_files.zip", mimetype="application/zip", conditional=True)

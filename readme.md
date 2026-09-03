@@ -1,55 +1,81 @@
-# 水镜云盘
+# 水镜云盘（ShuijingTools）
 
-一个前后端分离的多用户网盘式文件存储项目。当前版本完成：
+一个轻量的多用户文件存储网站，采用 Flask、MySQL 和原生 HTML/CSS/JavaScript 构建。每个用户拥有独立目录，可以在网页中浏览、上传、预览、移动、删除和下载文件。
 
-- 用户输入用户名进入自己的存储空间；
-- 每个用户拥有独立、隔离的文件目录；
-- 网盘式目录浏览，展示文件/文件夹、修改日期和大小；
-- 支持把文件或整个文件夹拖入网页，并按原目录结构上传到当前目录；
-- 批量选择后进行移动、删除、下载。
+生产地址：`https://shuijing.site:8080`
 
-当前预置用户：
+## 功能
 
-- `shuijing`
-- `txt`
+- 输入已有用户名进入对应存储空间；
+- 文件与文件夹分用户隔离存储；
+- 浏览目录、查看修改时间和普通文件大小；
+- 上传单个文件、多个文件或完整文件夹；
+- 支持拖放上传并保留目录结构；
+- 新建文件夹、批量移动和批量删除；
+- 常见图片、文档、文本、音视频文件在线预览；
+- 单个文件使用浏览器原生下载，支持条件请求和 Range；
+- 多文件或文件夹在服务器临时生成 ZIP 后下载；
+- 保存、复制和删除文本便笺；
+- 显示用户已用空间和服务器磁盘容量。
+
+当前预置用户：`shuijing`、`txt`。
+
+> 当前登录方式仅校验用户名，不要求密码。不要将未知用户名加入数据库。
 
 ## 目录结构
 
 ```text
 .
-├── backend/               Flask REST API
-│   ├── app.py             应用入口与中间件
-│   ├── config.py          环境配置
-│   ├── database.py        MySQL 连接与建表
-│   ├── auth_service.py    用户登录与会话
-│   ├── file_service.py    用户文件系统隔离逻辑
-│   ├── routes/            API 路由
-│   └── storage/           各用户存储目录（运行时生成）
-├── frontend/              独立前端
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
-├── legacy/                旧版单体和前端，仅作历史参考
-└── requirements.txt
+├── backend/                       Flask API
+│   ├── app.py                     应用、中间件、CORS 和预览入口
+│   ├── config.py                  环境配置
+│   ├── database.py                MySQL/SQLite 初始化和查询
+│   ├── auth_service.py            登录会话
+│   ├── file_service.py            文件隔离、路径校验和 ZIP 生成
+│   ├── text_service.py            文本便笺
+│   ├── routes/                    API 路由
+│   └── storage/                   本地预览存储（生产环境不使用）
+├── frontend/                      静态前端
+├── deploy/                        Nginx、systemd 和部署说明
+├── tests/                         集成测试
+├── .env.example                   环境变量示例
+└── requirements.txt               固定版本的 Python 依赖
 ```
 
-## 技术架构
+## 存储模型
 
-- 后端：Flask + MySQL
-- 前端：原生 HTML/CSS/JavaScript，独立部署
-- 认证：无密码用户名登录，服务端生成不透明 token
-- 文件存储：按用户的 `storage_key` 生成物理目录，接口层统一做路径穿越校验
+生产文件保存在：
 
-数据库表：
+```text
+/vol2/1000/backup/ShuijingTools/storage/<username>/
+```
 
-- `storage_users`：用户与存储目录标识
-- `user_sessions`：登录会话
+例如：
 
-首次启动会自动创建数据库、表，并写入 `shuijing`、`txt` 两个用户。
+```text
+storage/
+├── shuijing/
+└── txt/
+```
 
-## 本地运行
+用户名只能包含英文字母、数字、下划线和短横线，最长64个字符。后端会校验所有相对路径，拒绝绝对路径、`..` 和逃逸用户目录的访问。
 
-先安装依赖：
+文件夹大小不在目录列表中实时计算，以免递归扫描大量文件导致页面卡顿；普通文件仍显示实际大小。
+
+## 下载机制
+
+下载分为两步：
+
+1. 前端携带登录令牌调用 `/api/files/download/prepare`；
+2. 后端返回5分钟有效的签名下载链接，浏览器使用原生下载访问该链接。
+
+只选择一个普通文件时直接返回原文件。选择多个项目或文件夹时，后端在系统临时目录生成 ZIP，响应结束后自动删除临时文件。这避免了旧版本在服务器和浏览器中同时保存数百 MB Blob 的问题。
+
+前端 JS/CSS 使用版本参数并由 Nginx 设置重新验证缓存，部署新版本后不会继续调用已删除的旧接口。
+
+## 本地开发
+
+### 安装依赖
 
 ```bash
 python3 -m venv .venv
@@ -57,82 +83,111 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-启动后端：
-
-```bash
-python3 -m backend.app
-```
-
-后端默认监听 `http://127.0.0.1:8080`，只提供 API。
-
-如果本机暂时没有 MySQL，可以用 SQLite 直接预览：
+### 使用 SQLite 启动后端
 
 ```bash
 DB_DRIVER=sqlite \
 SQLITE_DB_PATH=/tmp/shuijingtools_preview.db \
 STORAGE_ROOT=/tmp/shuijingtools_preview_storage \
+SECRET_KEY=local-development-secret \
+FLASK_DEBUG=1 \
 python3 -m backend.app
 ```
 
-另开一个终端启动前端静态服务：
+### 启动前端
 
 ```bash
 python3 -m http.server 5173 -d frontend
 ```
 
-浏览器打开 `http://127.0.0.1:5173`。
-
-生产环境可用 gunicorn 启动：
-
-```bash
-gunicorn -w 4 -b 0.0.0.0:8080 backend.wsgi:app
-```
-
-前端默认请求 `http://127.0.0.1:8080`。如果你的后端地址不同，可以在 `frontend/index.html` 加载 `app.js` 之前加入：
-
-```js
-window.STORAGE_API_BASE = 'http://你的后端地址';
-```
-
-或在 `frontend/app.js` 顶部修改 `API_BASE` 的默认值。
+浏览器打开 `http://127.0.0.1:5173`。前端会请求 `http://127.0.0.1:8080` 的本地 API。
 
 ## 环境变量
 
-后端支持以下环境变量：
+复制 `.env.example` 并填写生产值。真实 `.env` 已被 Git 忽略，权限应设置为 `600`。
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `DB_HOST` | `127.0.0.1` | MySQL 地址 |
-| `DB_PORT` | `3306` | MySQL 端口 |
-| `DB_USER` | `root` | MySQL 用户 |
-| `DB_PASSWORD` | `Lhf134652` | MySQL 密码 |
-| `DB_NAME` | `shuijingTools` | 数据库名 |
+| `DB_HOST` | `127.0.0.1` | 数据库地址 |
+| `DB_PORT` | `3306` | 数据库端口 |
+| `DB_USER` | `root` | 数据库用户，生产环境应使用专用账户 |
+| `DB_PASSWORD` | 空 | 数据库密码 |
+| `DB_NAME` | `shuijingTools` | 数据库名称 |
 | `DB_DRIVER` | `mysql` | `mysql` 或 `sqlite` |
-| `SQLITE_DB_PATH` | `backend/shuijingtools.db` | SQLite 文件路径 |
-| `APP_HOST` | `0.0.0.0` | API 监听地址 |
-| `APP_PORT` | `8080` | API 端口 |
+| `SQLITE_DB_PATH` | `backend/shuijingtools.db` | SQLite 文件位置 |
+| `APP_HOST` | `0.0.0.0` | 开发服务器监听地址 |
+| `APP_PORT` | `8080` | 开发服务器端口 |
 | `STORAGE_ROOT` | `backend/storage` | 用户文件根目录 |
-| `MAX_CONTENT_LENGTH` | `10737418240` | 单次请求大小限制，默认 10 GB |
+| `MAX_CONTENT_LENGTH` | `10737418240` | 单次请求最大10GB |
+| `SECRET_KEY` | 无安全默认值 | 生产签名密钥，必须配置 |
+| `ALLOWED_ORIGINS` | `http://127.0.0.1:5173` | 逗号分隔的 CORS 来源 |
 
-## API 概览
+## API
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `POST` | `/api/auth/login` | 用户名登录，返回 token |
-| `GET` | `/api/auth/me` | 当前用户 |
-| `POST` | `/api/auth/logout` | 退出登录 |
+| `GET` | `/api/health` | 健康检查 |
+| `POST` | `/api/auth/login` | 使用用户名登录 |
+| `GET` | `/api/auth/me` | 当前用户和容量信息 |
+| `POST` | `/api/auth/logout` | 注销当前会话 |
 | `GET` | `/api/files?path=` | 列出目录 |
-| `POST` | `/api/files/upload` | 上传文件/目录结构 |
+| `POST` | `/api/files/upload` | 上传文件或文件夹 |
 | `POST` | `/api/files/mkdir` | 新建文件夹 |
 | `POST` | `/api/files/move` | 批量移动 |
+| `POST` | `/api/files/delete` | 删除单个路径 |
 | `POST` | `/api/files/batch-delete` | 批量删除 |
-| `POST` | `/api/files/batch-download` | 批量下载为 ZIP |
-| `GET` | `/api/files/download?path=` | 下载文件 |
-| `GET` | `/api/files/preview?path=` | 浏览器内联预览文件 |
-| `POST` | `/api/files/delete` | 删除文件或文件夹 |
+| `POST` | `/api/files/download/prepare` | 生成短期下载链接 |
+| `GET` | `/api/files/download/ticket/<ticket>` | 下载原文件或 ZIP |
+| `GET` | `/api/files/download?path=` | 直接下载接口 |
+| `GET` | `/api/files/preview?path=` | API 内联预览 |
+| `POST` | `/api/files/preview/start` | 创建预览会话 |
+| `GET` | `/preview/<path>` | 使用预览会话打开文件 |
+| `GET/POST` | `/api/texts` | 查询或新增文本便笺 |
+| `DELETE` | `/api/texts/<id>` | 删除文本便笺 |
 
-除登录和健康检查外，API 都需要请求头：
+除健康检查、登录和签名下载链接外，API 需要：
 
 ```http
 Authorization: Bearer <token>
 ```
+
+## 测试
+
+```bash
+SECRET_KEY=test-secret \
+DB_DRIVER=sqlite \
+SQLITE_DB_PATH=/tmp/shuijingtools_test.db \
+STORAGE_ROOT=/tmp/shuijingtools_test_storage \
+python -m unittest discover -s tests -v
+```
+
+测试覆盖用户名目录、单文件下载、批量 ZIP 和用户文件隔离。
+
+## 生产部署
+
+生产环境由以下组件组成：
+
+- Nginx 容器 `shuijing-nginx`：TLS、静态前端和反向代理；
+- systemd 服务 `shuijing-tools.service`：运行两个 Gunicorn worker；
+- MySQL 容器：保存用户、会话和文本便笺；
+- `storage/`：保存用户真实文件。
+
+后端与 Nginx 的长请求超时均为600秒。完整更新命令和回滚说明见 `deploy/README.md`。
+
+## 数据安全
+
+以下生产目录是持久化数据，部署或清理代码时绝对不能删除：
+
+```text
+/vol2/1000/backup/ShuijingTools/storage
+/vol2/1000/backup/docker/mysql
+```
+
+同时谨慎处理：
+
+```text
+/vol2/1000/backup/ShuijingTools/deploy/nginx/certs
+/vol2/1000/backup/ShuijingTools/logs
+```
+
+不要在生产项目根目录运行 `git clean -fdx`，也不要对整个项目根目录使用 `rsync --delete`。数据库结构变更前应先导出数据库或创建数据快照。

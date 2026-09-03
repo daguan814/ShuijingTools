@@ -665,7 +665,7 @@ async function batchDownloadSelected() {
   if (!paths.length) return;
 
   try {
-    const response = await api("/files/batch-download", {
+    const response = await api("/files/download/prepare", {
       method: "POST",
       json: {
         paths,
@@ -678,8 +678,13 @@ async function batchDownloadSelected() {
       return;
     }
 
-    const blob = await response.blob();
-    triggerDownloadBlob(blob, "selected_files.zip");
+    const data = await response.json();
+    const baseUrl = API_BASE || window.location.origin;
+    const anchor = document.createElement("a");
+    anchor.href = new URL(data.url, baseUrl).href;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
     showToast("下载已开始。");
   } catch (_err) {
     showToast("下载失败。");
@@ -720,17 +725,6 @@ async function openFilePreview(path) {
     previewWindow.close();
     showToast("打开文件失败。");
   }
-}
-
-function triggerDownloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
 }
 
 function openMoveModal() {

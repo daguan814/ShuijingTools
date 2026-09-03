@@ -1,6 +1,7 @@
-import io
 import os
+import re
 import shutil
+import tempfile
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -23,9 +24,18 @@ class FileService:
     """Filesystem storage scoped to one user's storage directory."""
 
     def ensure_user_root(self, user):
-        root = STORAGE_ROOT / user["storage_key"]
+        root = STORAGE_ROOT / self.normalize_username(user["username"])
         root.mkdir(parents=True, exist_ok=True)
         return root
+
+    @staticmethod
+    def normalize_username(raw: str) -> str:
+        username = str(raw or "").strip()
+        if not username or len(username) > 64:
+            raise ValueError("invalid username")
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", username):
+            raise ValueError("invalid username")
+        return username
 
     def user_root(self, user) -> Path:
         return self.ensure_user_root(user).resolve()
@@ -91,13 +101,13 @@ class FileService:
     def _entry_info(self, user, absolute: Path, relative_path: str) -> dict:
         stat = absolute.stat()
         is_dir = absolute.is_dir()
-        size = self._directory_size(absolute) if is_dir else stat.st_size
+        size = 0 if is_dir else stat.st_size
         return {
             "name": absolute.name,
             "path": relative_path,
             "type": "folder" if is_dir else "file",
             "size": size,
-            "size_display": format_size(size),
+            "size_display": "--" if is_dir else format_size(size),
             "modified_at": datetime.fromtimestamp(
                 stat.st_mtime, tz=timezone.utc
             ).isoformat(),
@@ -261,36 +271,44 @@ class FileService:
 
     def build_download_archive(self, user, paths, base_path: str):
         base_norm = self.normalize_relative_path(base_path)
-        buffer = io.BytesIO()
+        temp_file = tempfile.NamedTemporaryFile(
+            prefix="shuijing-download-",
+            suffix=".zip",
+            delete=False,
+        )
+        temp_path = Path(temp_file.name)
+        temp_file.close()
         seen = set()
 
-        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-            for raw_path in paths:
-                rel = self.normalize_relative_path(raw_path)
-                if not rel:
-                    raise ValueError("cannot download user root")
-                source = self.resolve_user_path(user, rel)
-                if not source.exists():
-                    continue
+        try:
+            with zipfile.ZipFile(temp_path, "w", zipfile.ZIP_DEFLATED) as archive:
+                for raw_path in paths:
+                    rel = self.normalize_relative_path(raw_path)
+                    if not rel:
+                        raise ValueError("cannot download user root")
+                    source = self.resolve_user_path(user, rel)
+                    if not source.exists():
+                        raise FileNotFoundError(rel)
 
-                if source.is_dir():
-                    for child in source.rglob("*"):
-                        if child.name == ".DS_Store":
-                            continue
-                        child_rel = self.relative_path(user, child)
-                        arcname = self._archive_name(child_rel, base_norm)
-                        if not arcname or arcname in seen:
-                            continue
-                        archive.write(str(child), arcname=arcname)
-                        seen.add(arcname)
-                else:
-                    arcname = self._archive_name(rel, base_norm)
-                    if arcname and arcname not in seen:
-                        archive.write(str(source), arcname=arcname)
-                        seen.add(arcname)
-
-        buffer.seek(0)
-        return buffer
+                    if source.is_dir():
+                        for child in source.rglob("*"):
+                            if child.name == ".DS_Store":
+                                continue
+                            child_rel = self.relative_path(user, child)
+                            arcname = self._archive_name(child_rel, base_norm)
+                            if not arcname or arcname in seen:
+                                continue
+                            archive.write(str(child), arcname=arcname)
+                            seen.add(arcname)
+                    else:
+                        arcname = self._archive_name(rel, base_norm)
+                        if arcname and arcname not in seen:
+                            archive.write(str(source), arcname=arcname)
+                            seen.add(arcname)
+            return temp_path
+        except Exception:
+            temp_path.unlink(missing_ok=True)
+            raise
 
 
 file_service = FileService()
