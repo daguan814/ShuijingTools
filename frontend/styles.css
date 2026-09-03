@@ -487,7 +487,8 @@ button {
 }
 
 .entry-name,
-.file-open-btn {
+.file-open-btn,
+.file-download-btn {
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -498,7 +499,8 @@ button {
   text-overflow: ellipsis;
 }
 
-.file-open-btn {
+.file-open-btn,
+.file-download-btn {
   padding: 0;
   border: none;
   background: transparent;
@@ -507,7 +509,8 @@ button {
   text-align: left;
 }
 
-.file-open-btn:hover {
+.file-open-btn:hover,
+.file-download-btn:hover {
   color: var(--primary);
 }
 
@@ -532,7 +535,8 @@ button {
 }
 
 .entry-link:hover .folder-icon-wrap,
-.file-open-btn:hover .file-icon-wrap {
+.file-open-btn:hover .file-icon-wrap,
+.file-download-btn:hover .file-icon-wrap {
   transform: translateY(-1px);
   background: color-mix(in srgb, currentColor 16%, transparent);
 }

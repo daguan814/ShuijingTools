@@ -98,6 +98,14 @@ class FileService:
                     continue
         return total
 
+    @staticmethod
+    def _natural_sort_key(name: str):
+        return tuple(
+            (0, int(part)) if part.isdigit() else (1, part)
+            for part in re.split(r"(\d+)", str(name).casefold())
+            if part
+        )
+
     def _entry_info(self, user, absolute: Path, relative_path: str) -> dict:
         stat = absolute.stat()
         is_dir = absolute.is_dir()
@@ -143,7 +151,7 @@ class FileService:
         entries.sort(
             key=lambda item: (
                 item["type"] != "folder",
-                item["name"].casefold(),
+                self._natural_sort_key(item["name"]),
             )
         )
         return entries

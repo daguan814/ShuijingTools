@@ -412,7 +412,7 @@ function renderTable() {
         ? `<button type="button" class="entry-link" data-path="${escapeAttr(entry.path)}">${icon}<span>${escapeHtml(entry.name)}</span></button>`
         : canPreview
           ? `<button type="button" class="file-open-btn" data-path="${escapeAttr(entry.path)}">${icon}<span>${escapeHtml(entry.name)}</span></button>`
-          : `<span class="entry-name">${icon}<span>${escapeHtml(entry.name)}</span></span>`;
+          : `<button type="button" class="file-download-btn" data-path="${escapeAttr(entry.path)}" title="点击下载">${icon}<span>${escapeHtml(entry.name)}</span></button>`;
 
       const checked = selectedPaths.has(entry.path) ? "checked" : "";
 
@@ -492,6 +492,12 @@ async function handleTableClick(event) {
   const openButton = event.target.closest(".file-open-btn");
   if (openButton) {
     openFilePreview(openButton.dataset.path || "");
+    return;
+  }
+
+  const downloadButton = event.target.closest(".file-download-btn");
+  if (downloadButton) {
+    startDownload([downloadButton.dataset.path || ""]);
     return;
   }
 
@@ -725,11 +731,18 @@ async function batchDownloadSelected() {
   const paths = Array.from(selectedPaths);
   if (!paths.length) return;
 
+  await startDownload(paths);
+}
+
+async function startDownload(paths) {
+  const validPaths = paths.filter(Boolean);
+  if (!validPaths.length) return;
+
   try {
     const response = await api("/files/download/prepare", {
       method: "POST",
       json: {
-        paths,
+        paths: validPaths,
         base: currentPath,
       },
     });
