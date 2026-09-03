@@ -683,6 +683,56 @@ button {
   color: var(--primary);
 }
 
+.log-query-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.log-date-control,
+.log-page-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.log-date-control input,
+.log-page-size-control select {
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+}
+
+.log-result-summary {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.log-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .log-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -752,6 +802,7 @@ button {
 .log-type--download { background: #e8f5fb; color: #237a9d; }
 .log-type--move { background: #fff3df; color: #a86613; }
 .log-type--delete { background: #ffebed; color: #c24150; }
+.log-type--restore { background: #f0eaff; color: #7550bb; }
 
 .log-table-wrap .empty-message {
   margin: 16px;
@@ -1073,6 +1124,25 @@ button {
   .log-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .log-query-bar {
+    align-items: stretch;
+  }
+
+  .log-date-control {
+    flex: 1 1 100%;
+  }
+
+  .log-date-control input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .log-result-summary {
+    display: flex;
+    align-items: center;
+    margin-left: 0;
   }
 
   .log-table thead {

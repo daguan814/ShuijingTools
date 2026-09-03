@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
-  <link rel="stylesheet" href="/styles.css?v=20260903-9">
+  <link rel="stylesheet" href="/styles.css?v=20260903-10">
 </head>
 <body>
   <div id="loginView" class="auth-screen">
@@ -125,6 +125,23 @@
             <button type="button" class="log-filter" data-log-filter="download">下载</button>
             <button type="button" class="log-filter" data-log-filter="move">移动</button>
             <button type="button" class="log-filter" data-log-filter="delete">删除</button>
+            <button type="button" class="log-filter" data-log-filter="restore">恢复</button>
+          </div>
+          <div class="log-query-bar">
+            <label class="log-date-control">
+              <span>日期</span>
+              <input id="logDateFilter" type="date">
+            </label>
+            <button id="clearLogDateBtn" type="button" class="secondary-btn">清除日期</button>
+            <label class="log-page-size-control">
+              <span>每页</span>
+              <select id="logPageSize">
+                <option value="10">10 条</option>
+                <option value="20" selected>20 条</option>
+                <option value="50">50 条</option>
+              </select>
+            </label>
+            <span id="logResultSummary" class="log-result-summary">共 0 条</span>
           </div>
           <div class="log-table-wrap">
             <table class="log-table">
@@ -138,6 +155,11 @@
               <tbody id="logTableBody"></tbody>
             </table>
             <div id="logEmpty" class="empty-message hidden">还没有符合条件的日志记录。</div>
+          </div>
+          <div class="log-pagination">
+            <button id="logPrevBtn" type="button" class="secondary-btn">上一页</button>
+            <span id="logPageSummary">第 1 / 1 页</span>
+            <button id="logNextBtn" type="button" class="secondary-btn">下一页</button>
           </div>
         </section>
 
@@ -194,6 +216,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/app.js?v=20260903-9"></script>
+  <script src="/app.js?v=20260903-10"></script>
 </body>
 </html>

@@ -13,6 +13,11 @@ let moveDestination = "";
 let logEntries = [];
 let recycleItems = [];
 let activeLogFilter = "all";
+let logDateFilter = "";
+let logPage = 1;
+let logPageSize = 20;
+let logTotal = 0;
+let logTotalPages = 1;
 let activeView = "files";
 
 const PREVIEW_EXTENSIONS = new Set([
@@ -216,7 +221,35 @@ function bindStorage() {
     const button = event.target.closest("[data-log-filter]");
     if (!button) return;
     activeLogFilter = button.dataset.logFilter || "all";
-    renderLogs();
+    logPage = 1;
+    loadLogs();
+  });
+  document.getElementById("logDateFilter")?.addEventListener("change", (event) => {
+    logDateFilter = event.target.value || "";
+    logPage = 1;
+    loadLogs();
+  });
+  document.getElementById("clearLogDateBtn")?.addEventListener("click", () => {
+    logDateFilter = "";
+    const input = document.getElementById("logDateFilter");
+    if (input) input.value = "";
+    logPage = 1;
+    loadLogs();
+  });
+  document.getElementById("logPageSize")?.addEventListener("change", (event) => {
+    logPageSize = Number(event.target.value) || 20;
+    logPage = 1;
+    loadLogs();
+  });
+  document.getElementById("logPrevBtn")?.addEventListener("click", () => {
+    if (logPage <= 1) return;
+    logPage -= 1;
+    loadLogs();
+  });
+  document.getElementById("logNextBtn")?.addEventListener("click", () => {
+    if (logPage >= logTotalPages) return;
+    logPage += 1;
+    loadLogs();
   });
 
   document.getElementById("fileInput")?.addEventListener("change", (event) => {
@@ -601,9 +634,20 @@ async function handleRecycleClick(event) {
 async function loadLogs() {
   if (!token) return;
   try {
-    const response = await api("/logs");
+    const params = new URLSearchParams({
+      action: activeLogFilter,
+      page: String(logPage),
+      page_size: String(logPageSize),
+    });
+    if (logDateFilter) params.set("date", logDateFilter);
+    const response = await api(`/logs?${params.toString()}`);
     if (!response.ok) return;
-    logEntries = await response.json();
+    const data = await response.json();
+    logEntries = data.items || [];
+    logTotal = Number(data.total) || 0;
+    logPage = Number(data.page) || 1;
+    logPageSize = Number(data.page_size) || 20;
+    logTotalPages = Number(data.total_pages) || 1;
     renderLogs();
   } catch (_err) {
     showToast("读取日志失败。");
@@ -619,11 +663,8 @@ function renderLogs() {
     button.classList.toggle("active", button.dataset.logFilter === activeLogFilter);
   });
 
-  const visibleEntries = logEntries.filter(
-    (entry) => activeLogFilter === "all" || getLogCategory(entry.content) === activeLogFilter
-  );
-  empty.classList.toggle("hidden", visibleEntries.length > 0);
-  tableBody.innerHTML = visibleEntries
+  empty.classList.toggle("hidden", logEntries.length > 0);
+  tableBody.innerHTML = logEntries
     .map(
       (entry) => {
         const category = getLogCategory(entry.content);
@@ -637,6 +678,15 @@ function renderLogs() {
       }
     )
     .join("");
+
+  const resultSummary = document.getElementById("logResultSummary");
+  if (resultSummary) resultSummary.textContent = `筛选结果共 ${logTotal} 条`;
+  const pageSummary = document.getElementById("logPageSummary");
+  if (pageSummary) pageSummary.textContent = `第 ${logPage} / ${logTotalPages} 页`;
+  const prev = document.getElementById("logPrevBtn");
+  const next = document.getElementById("logNextBtn");
+  if (prev) prev.disabled = logPage <= 1;
+  if (next) next.disabled = logPage >= logTotalPages;
 }
 
 function getLogCategory(content = "") {
@@ -646,6 +696,7 @@ function getLogCategory(content = "") {
   if (action.startsWith("下载") || action.startsWith("批量下载")) return "download";
   if (action.startsWith("移动")) return "move";
   if (action.startsWith("删除")) return "delete";
+  if (action.startsWith("恢复")) return "restore";
   return "other";
 }
 
@@ -656,6 +707,7 @@ function getLogCategoryLabel(category) {
     download: "下载",
     move: "移动",
     delete: "删除",
+    restore: "恢复",
     other: "其他",
   }[category] || "其他";
 }

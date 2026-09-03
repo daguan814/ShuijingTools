@@ -16,7 +16,7 @@
 - 常见图片、文档、文本、音视频文件在线预览；
 - 单个文件使用浏览器原生下载，支持条件请求和 Range；
 - 多文件或文件夹在服务器临时生成 ZIP 后下载；
-- 自动记录按用户隔离的文件操作日志，并支持按类型筛选；
+- 自动记录按用户隔离的文件操作日志，支持按日期与操作类型组合筛选、结果统计和分页；
 - 同一浏览器连续登录失败5次后锁定5小时；
 - 显示用户已用空间和服务器磁盘容量。
 
@@ -147,7 +147,7 @@ python3 -m http.server 5173 -d frontend
 | `GET` | `/api/files/preview?path=` | API 内联预览 |
 | `POST` | `/api/files/preview/start` | 创建预览会话 |
 | `GET` | `/preview/<path>` | 使用预览会话打开文件 |
-| `GET` | `/api/logs` | 查询当前用户的文件操作日志 |
+| `GET` | `/api/logs` | 查询当前用户的文件操作日志，可使用 `date`、`action`、`page`、`page_size` 筛选和分页 |
 | `GET` | `/api/recycle` | 查询当前用户的回收站 |
 | `POST` | `/api/recycle/<id>/restore` | 使用回收站密码恢复项目 |
 
