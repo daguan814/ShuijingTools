@@ -202,6 +202,8 @@ button {
 }
 
 .sidebar {
+  display: flex;
+  flex-direction: column;
   padding: 24px 16px;
   border-right: 1px solid var(--border);
   background: #fbfcff;
@@ -230,6 +232,10 @@ button {
   font-weight: 600;
 }
 
+.sidebar-link + .sidebar-link {
+  margin-top: 7px;
+}
+
 .sidebar-link.active,
 .sidebar-link:hover {
   background: var(--hover);
@@ -240,6 +246,14 @@ button {
   margin: 28px 8px 0;
   color: var(--muted);
   font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.sidebar-footer {
+  margin: auto 8px 0;
+  padding-top: 28px;
+  color: var(--muted);
+  font-size: 0.72rem;
   line-height: 1.6;
 }
 

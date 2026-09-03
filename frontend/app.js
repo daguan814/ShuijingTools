@@ -11,6 +11,7 @@ let entries = [];
 let selectedPaths = new Set();
 let moveDestination = "";
 let textNotes = [];
+let logEntries = [];
 let activeView = "files";
 
 const PREVIEW_EXTENSIONS = new Set([
@@ -177,6 +178,10 @@ function bindStorage() {
     switchView("texts");
     loadTextNotes();
   });
+  document.getElementById("logsBtn")?.addEventListener("click", () => {
+    switchView("logs");
+    loadLogs();
+  });
   document.getElementById("uploadFileBtn")?.addEventListener("click", () =>
     document.getElementById("fileInput").click()
   );
@@ -206,6 +211,8 @@ function bindStorage() {
   addTextForm?.addEventListener("submit", addTextNote);
   const textCards = document.getElementById("textCards");
   textCards?.addEventListener("click", handleTextCardClick);
+  document.getElementById("addLogForm")?.addEventListener("submit", addLog);
+  document.getElementById("logCards")?.addEventListener("click", handleLogCardClick);
 
   document.getElementById("fileInput")?.addEventListener("change", (event) => {
     collectInputFiles(event.target);
@@ -514,17 +521,97 @@ async function handleTableClick(event) {
 async function navigateTo(path) {
   currentPath = path || "";
   await loadCurrentDirectory();
-  document
-    .querySelectorAll(".sidebar-link")
-    .forEach((button) => button.classList.toggle("active", path === ""));
+  document.getElementById("rootBtn")?.classList.add("active");
+  document.getElementById("textsBtn")?.classList.remove("active");
+  document.getElementById("logsBtn")?.classList.remove("active");
 }
 
 function switchView(view) {
   activeView = view;
   document.getElementById("filesView")?.classList.toggle("hidden", view !== "files");
   document.getElementById("textsView")?.classList.toggle("hidden", view !== "texts");
+  document.getElementById("logsView")?.classList.toggle("hidden", view !== "logs");
   document.getElementById("rootBtn")?.classList.toggle("active", view === "files");
   document.getElementById("textsBtn")?.classList.toggle("active", view === "texts");
+  document.getElementById("logsBtn")?.classList.toggle("active", view === "logs");
+}
+
+async function loadLogs() {
+  if (!token) return;
+  try {
+    const response = await api("/logs");
+    if (!response.ok) return;
+    logEntries = await response.json();
+    renderLogs();
+  } catch (_err) {
+    showToast("读取日志失败。");
+  }
+}
+
+function renderLogs() {
+  const container = document.getElementById("logCards");
+  if (!container) return;
+  if (!logEntries.length) {
+    container.innerHTML = `<div class="text-empty">还没有日志记录。</div>`;
+    return;
+  }
+
+  container.innerHTML = logEntries
+    .map(
+      (entry) => `
+        <article class="text-card" data-id="${entry.id}">
+          <div class="text-card-meta">${escapeHtml(formatDate(entry.created_at))}</div>
+          <div class="text-card-content">${escapeHtml(entry.content)}</div>
+          <div class="text-card-actions">
+            <button type="button" class="row-btn copy-log-btn" data-content="${escapeAttr(entry.content)}">复制</button>
+            <button type="button" class="row-btn danger delete-log-btn" data-id="${entry.id}">删除</button>
+          </div>
+        </article>`
+    )
+    .join("");
+}
+
+async function addLog(event) {
+  event.preventDefault();
+  const input = document.getElementById("logContent");
+  const content = input.value.trim();
+  if (!content) return;
+  try {
+    const response = await api("/logs", { method: "POST", json: { content } });
+    if (!response.ok) {
+      const data = await safeJson(response);
+      showToast(data?.detail || "保存日志失败。");
+      return;
+    }
+    input.value = "";
+    await loadLogs();
+    showToast("日志已保存。");
+  } catch (_err) {
+    showToast("保存日志失败。");
+  }
+}
+
+async function handleLogCardClick(event) {
+  const copyButton = event.target.closest(".copy-log-btn");
+  if (copyButton) {
+    copyText(copyButton.dataset.content || "");
+    return;
+  }
+
+  const deleteButton = event.target.closest(".delete-log-btn");
+  if (!deleteButton) return;
+  if (!window.confirm("确认删除这条日志吗？")) return;
+  try {
+    const response = await api(`/logs/${deleteButton.dataset.id}`, { method: "DELETE" });
+    if (!response.ok) {
+      showToast("删除日志失败。");
+      return;
+    }
+    await loadLogs();
+    showToast("日志已删除。");
+  } catch (_err) {
+    showToast("删除日志失败。");
+  }
 }
 
 async function loadTextNotes() {
