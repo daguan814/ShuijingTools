@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
-  <link rel="stylesheet" href="/styles.css?v=20260903-7">
+  <link rel="stylesheet" href="/styles.css?v=20260903-8">
 </head>
 <body>
   <div id="loginView" class="auth-screen">
@@ -44,10 +44,6 @@
         <button id="rootBtn" type="button" class="sidebar-link active">
           <span class="sidebar-icon">📁</span>
           <span>全部文件</span>
-        </button>
-        <button id="textsBtn" type="button" class="sidebar-link">
-          <span class="sidebar-icon">📝</span>
-          <span>全部文本</span>
         </button>
         <div class="sidebar-heading sidebar-heading--tools">工具</div>
         <button id="logsBtn" type="button" class="sidebar-link">
@@ -108,22 +104,6 @@
           </div>
         </section>
 
-        <section id="textsView" class="page-section hidden">
-          <div class="panel-card">
-            <div class="panel-card-header">
-              <h2>全部文本</h2>
-              <p>输入文本保存成卡片。如果内容是网址，点击后可以直接打开。</p>
-            </div>
-            <form id="addTextForm" class="text-form">
-              <textarea id="textContent" rows="5" placeholder="输入文本或网址..." required></textarea>
-              <div class="text-form-actions">
-                <button type="submit" class="primary-btn">保存文本</button>
-              </div>
-            </form>
-          </div>
-          <div id="textCards" class="text-card-grid"></div>
-        </section>
-
         <section id="logsView" class="page-section hidden">
           <div class="panel-card">
             <div class="panel-card-header log-header">
@@ -153,7 +133,7 @@
               </thead>
               <tbody id="logTableBody"></tbody>
             </table>
-            <div id="logEmpty" class="text-empty hidden">还没有符合条件的日志记录。</div>
+            <div id="logEmpty" class="empty-message hidden">还没有符合条件的日志记录。</div>
           </div>
         </section>
       </main>
@@ -183,6 +163,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/app.js?v=20260903-7"></script>
+  <script src="/app.js?v=20260903-8"></script>
 </body>
 </html>

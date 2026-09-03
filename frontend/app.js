@@ -10,7 +10,6 @@ let currentPath = "";
 let entries = [];
 let selectedPaths = new Set();
 let moveDestination = "";
-let textNotes = [];
 let logEntries = [];
 let activeLogFilter = "all";
 let activeView = "files";
@@ -175,10 +174,6 @@ function bindStorage() {
     switchView("files");
     navigateTo("");
   });
-  document.getElementById("textsBtn")?.addEventListener("click", () => {
-    switchView("texts");
-    loadTextNotes();
-  });
   document.getElementById("logsBtn")?.addEventListener("click", () => {
     switchView("logs");
     loadLogs();
@@ -208,10 +203,6 @@ function bindStorage() {
     .getElementById("batchDeleteBtn")
     ?.addEventListener("click", batchDeleteSelected);
 
-  const addTextForm = document.getElementById("addTextForm");
-  addTextForm?.addEventListener("submit", addTextNote);
-  const textCards = document.getElementById("textCards");
-  textCards?.addEventListener("click", handleTextCardClick);
   document.getElementById("refreshLogsBtn")?.addEventListener("click", loadLogs);
   document.getElementById("logFilters")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-log-filter]");
@@ -528,17 +519,14 @@ async function navigateTo(path) {
   currentPath = path || "";
   await loadCurrentDirectory();
   document.getElementById("rootBtn")?.classList.add("active");
-  document.getElementById("textsBtn")?.classList.remove("active");
   document.getElementById("logsBtn")?.classList.remove("active");
 }
 
 function switchView(view) {
   activeView = view;
   document.getElementById("filesView")?.classList.toggle("hidden", view !== "files");
-  document.getElementById("textsView")?.classList.toggle("hidden", view !== "texts");
   document.getElementById("logsView")?.classList.toggle("hidden", view !== "logs");
   document.getElementById("rootBtn")?.classList.toggle("active", view === "files");
-  document.getElementById("textsBtn")?.classList.toggle("active", view === "texts");
   document.getElementById("logsBtn")?.classList.toggle("active", view === "logs");
 }
 
@@ -602,151 +590,6 @@ function getLogCategoryLabel(category) {
     delete: "删除",
     other: "其他",
   }[category] || "其他";
-}
-
-async function loadTextNotes() {
-  if (!token) return;
-  try {
-    const response = await api("/texts");
-    if (!response.ok) return;
-    textNotes = await response.json();
-    renderTextCards();
-  } catch (_err) {
-    showToast("读取文本失败。");
-  }
-}
-
-function renderTextCards() {
-  const container = document.getElementById("textCards");
-  if (!container) return;
-
-  if (!textNotes.length) {
-    container.innerHTML = `<div class="text-empty">还没有保存文本。</div>`;
-    return;
-  }
-
-  container.innerHTML = textNotes
-    .map(
-      (note) => `
-        <article class="text-card" data-id="${note.id}">
-          <div class="text-card-meta">${escapeHtml(formatDate(note.created_at))}</div>
-          <div class="text-card-content" data-content="${escapeAttr(note.content)}"></div>
-          <div class="text-card-actions">
-            <button type="button" class="row-btn copy-text-btn" data-content="${escapeAttr(note.content)}">复制</button>
-            <button type="button" class="row-btn danger delete-text-btn" data-id="${note.id}">删除</button>
-          </div>
-        </article>`
-    )
-    .join("");
-
-  container.querySelectorAll(".text-card-content").forEach((el) => {
-    linkifyTextElement(el);
-  });
-}
-
-function linkifyTextElement(el) {
-  const raw = el.dataset.content || "";
-  el.textContent = "";
-  const fragment = document.createDocumentFragment();
-  const regex = /(https?:\/\/[^\s<]+)/g;
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(raw)) !== null) {
-    if (match.index > lastIndex) {
-      fragment.appendChild(document.createTextNode(raw.slice(lastIndex, match.index)));
-    }
-    const link = document.createElement("a");
-    link.href = match[0];
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = match[0];
-    fragment.appendChild(link);
-    lastIndex = match.index + match[0].length;
-  }
-
-  if (lastIndex < raw.length) {
-    fragment.appendChild(document.createTextNode(raw.slice(lastIndex)));
-  }
-  el.appendChild(fragment);
-}
-
-async function addTextNote(event) {
-  event.preventDefault();
-  const input = document.getElementById("textContent");
-  const content = input.value.trim();
-  if (!content) return;
-
-  try {
-    const response = await api("/texts", {
-      method: "POST",
-      json: { content },
-    });
-    if (!response.ok) {
-      const data = await safeJson(response);
-      showToast(data?.detail || "保存失败。");
-      return;
-    }
-    input.value = "";
-    await loadTextNotes();
-    showToast("文本已保存。");
-  } catch (_err) {
-    showToast("保存失败。");
-  }
-}
-
-async function handleTextCardClick(event) {
-  const copyButton = event.target.closest(".copy-text-btn");
-  if (copyButton) {
-    copyText(copyButton.dataset.content || "");
-    return;
-  }
-
-  const deleteButton = event.target.closest(".delete-text-btn");
-  if (!deleteButton) return;
-
-  if (!window.confirm("确认删除这条文本吗？")) return;
-  try {
-    const response = await api(`/texts/${deleteButton.dataset.id}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) {
-      showToast("删除失败。");
-      return;
-    }
-    await loadTextNotes();
-    showToast("已删除。");
-  } catch (_err) {
-    showToast("删除失败。");
-  }
-}
-
-function copyText(content) {
-  if (!content) return;
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(content).then(
-      () => showToast("已复制"),
-      () => fallbackCopyText(content)
-    );
-    return;
-  }
-  fallbackCopyText(content);
-}
-
-function fallbackCopyText(content) {
-  const textarea = document.createElement("textarea");
-  textarea.value = content;
-  textarea.style.position = "fixed";
-  textarea.style.left = "-9999px";
-  document.body.appendChild(textarea);
-  textarea.select();
-  try {
-    document.execCommand("copy");
-    showToast("已复制");
-  } catch (_err) {
-    showToast("复制失败");
-  }
-  document.body.removeChild(textarea);
 }
 
 async function createFolder() {

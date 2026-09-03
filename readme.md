@@ -15,7 +15,7 @@
 - 常见图片、文档、文本、音视频文件在线预览；
 - 单个文件使用浏览器原生下载，支持条件请求和 Range；
 - 多文件或文件夹在服务器临时生成 ZIP 后下载；
-- 保存、复制和删除文本便笺；
+- 自动记录按用户隔离的文件操作日志，并支持按类型筛选；
 - 显示用户已用空间和服务器磁盘容量。
 
 当前预置用户：`shuijing`、`txt`。
@@ -32,7 +32,7 @@
 │   ├── database.py                MySQL/SQLite 初始化和查询
 │   ├── auth_service.py            登录会话
 │   ├── file_service.py            文件隔离、路径校验和 ZIP 生成
-│   ├── text_service.py            文本便笺
+│   ├── log_service.py             用户文件操作日志
 │   ├── routes/                    API 路由
 │   └── storage/                   本地预览存储（生产环境不使用）
 ├── frontend/                      静态前端
@@ -142,8 +142,7 @@ python3 -m http.server 5173 -d frontend
 | `GET` | `/api/files/preview?path=` | API 内联预览 |
 | `POST` | `/api/files/preview/start` | 创建预览会话 |
 | `GET` | `/preview/<path>` | 使用预览会话打开文件 |
-| `GET/POST` | `/api/texts` | 查询或新增文本便笺 |
-| `DELETE` | `/api/texts/<id>` | 删除文本便笺 |
+| `GET` | `/api/logs` | 查询当前用户的文件操作日志 |
 
 除健康检查、登录和签名下载链接外，API 需要：
 
@@ -169,7 +168,7 @@ python -m unittest discover -s tests -v
 
 - Nginx 容器 `shuijing-nginx`：TLS、静态前端和反向代理；
 - systemd 服务 `shuijing-tools.service`：运行两个 Gunicorn worker；
-- MySQL 容器：保存用户、会话和文本便笺；
+- MySQL 容器：保存用户、会话和文件操作日志；
 - `storage/`：保存用户真实文件。
 
 后端与 Nginx 的长请求超时均为600秒。完整更新命令和回滚说明见 `deploy/README.md`。
