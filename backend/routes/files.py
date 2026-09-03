@@ -7,6 +7,7 @@ from itsdangerous import BadSignature, SignatureExpired
 
 from ..file_service import file_service
 from ..log_service import log_service
+from ..recycle_service import recycle_service
 
 files_bp = Blueprint("files", __name__, url_prefix="/api/files")
 
@@ -207,15 +208,18 @@ def delete_path():
         relative_path = request.form.get("path", "")
 
     try:
-        target = file_service.resolve_user_path(g.current_user, relative_path)
-        target_type = "文件夹" if target.is_dir() else "文件"
-        file_service.delete(g.current_user, relative_path)
+        recycled = recycle_service.move_to_recycle(g.current_user, relative_path)
     except FileNotFoundError:
         return jsonify({"detail": "path not found"}), 404
     except ValueError as exc:
         return jsonify({"detail": str(exc)}), 400
 
-    _record_action(g.current_user["id"], f"删除{target_type}", relative_path)
+    target_type = "文件夹" if recycled["type"] == "folder" else "文件"
+    _record_action(
+        g.current_user["id"],
+        f"删除{target_type}（移入回收站）",
+        recycled["path"],
+    )
     return "", 204
 
 
@@ -229,23 +233,20 @@ def batch_delete():
     if not isinstance(paths, list) or not paths:
         return jsonify({"detail": "paths must be a non-empty list"}), 400
 
-    path_types = {}
+    results = []
     for raw_path in paths:
         try:
-            normalized_path = file_service.normalize_relative_path(str(raw_path))
-            target = file_service.resolve_user_path(g.current_user, normalized_path)
-            path_types[normalized_path] = "文件夹" if target.is_dir() else "文件"
-        except (FileNotFoundError, ValueError):
-            pass
-
-    results = file_service.delete_paths(g.current_user, paths)
-    for result in results:
-        if result.get("deleted"):
-            path = str(result.get("path", ""))
+            recycled = recycle_service.move_to_recycle(g.current_user, str(raw_path))
+            results.append({"path": recycled["path"], "deleted": True})
+            target_type = "文件夹" if recycled["type"] == "folder" else "文件"
             _record_action(
                 g.current_user["id"],
-                f"删除{path_types.get(path, '项目')}",
-                path,
+                f"删除{target_type}（移入回收站）",
+                recycled["path"],
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            results.append(
+                {"path": str(raw_path), "deleted": False, "error": str(exc)}
             )
     return jsonify({"results": results})
 

@@ -12,10 +12,12 @@
 - 上传单个文件、多个文件或完整文件夹；
 - 支持拖放上传并保留目录结构；
 - 新建文件夹、批量移动和批量删除；
+- 删除内容进入按用户隔离的回收站，输入管理密码后可恢复；
 - 常见图片、文档、文本、音视频文件在线预览；
 - 单个文件使用浏览器原生下载，支持条件请求和 Range；
 - 多文件或文件夹在服务器临时生成 ZIP 后下载；
 - 自动记录按用户隔离的文件操作日志，并支持按类型筛选；
+- 同一浏览器连续登录失败5次后锁定5小时；
 - 显示用户已用空间和服务器磁盘容量。
 
 当前预置用户：`shuijing`、`txt`。
@@ -33,6 +35,7 @@
 │   ├── auth_service.py            登录会话
 │   ├── file_service.py            文件隔离、路径校验和 ZIP 生成
 │   ├── log_service.py             用户文件操作日志
+│   ├── recycle_service.py         回收站移动与恢复
 │   ├── routes/                    API 路由
 │   └── storage/                   本地预览存储（生产环境不使用）
 ├── frontend/                      静态前端
@@ -118,6 +121,8 @@ python3 -m http.server 5173 -d frontend
 | `APP_HOST` | `0.0.0.0` | 开发服务器监听地址 |
 | `APP_PORT` | `8080` | 开发服务器端口 |
 | `STORAGE_ROOT` | `backend/storage` | 用户文件根目录 |
+| `RECYCLE_ROOT` | `recycle_bin` | 回收站文件根目录 |
+| `RECYCLE_BIN_PASSWORD` | 空 | 恢复回收站内容所需的管理密码 |
 | `MAX_CONTENT_LENGTH` | `10737418240` | 单次请求最大10GB |
 | `SECRET_KEY` | 无安全默认值 | 生产签名密钥，必须配置 |
 | `ALLOWED_ORIGINS` | `http://127.0.0.1:5173` | 逗号分隔的 CORS 来源 |
@@ -143,6 +148,8 @@ python3 -m http.server 5173 -d frontend
 | `POST` | `/api/files/preview/start` | 创建预览会话 |
 | `GET` | `/preview/<path>` | 使用预览会话打开文件 |
 | `GET` | `/api/logs` | 查询当前用户的文件操作日志 |
+| `GET` | `/api/recycle` | 查询当前用户的回收站 |
+| `POST` | `/api/recycle/<id>/restore` | 使用回收站密码恢复项目 |
 
 除健康检查、登录和签名下载链接外，API 需要：
 
@@ -170,6 +177,7 @@ python -m unittest discover -s tests -v
 - systemd 服务 `shuijing-tools.service`：运行两个 Gunicorn worker；
 - MySQL 容器：保存用户、会话和文件操作日志；
 - `storage/`：保存用户真实文件。
+- `recycle_bin/`：保存用户删除后等待恢复的文件。
 
 后端与 Nginx 的长请求超时均为600秒。完整更新命令和回滚说明见 `deploy/README.md`。
 
@@ -179,6 +187,7 @@ python -m unittest discover -s tests -v
 
 ```text
 /vol2/1000/backup/ShuijingTools/storage
+/vol2/1000/backup/ShuijingTools/recycle_bin
 /vol2/1000/backup/docker/mysql
 ```
 

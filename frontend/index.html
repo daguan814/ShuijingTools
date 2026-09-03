@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
-  <link rel="stylesheet" href="/styles.css?v=20260903-8">
+  <link rel="stylesheet" href="/styles.css?v=20260903-9">
 </head>
 <body>
   <div id="loginView" class="auth-screen">
@@ -49,6 +49,10 @@
         <button id="logsBtn" type="button" class="sidebar-link">
           <span class="sidebar-icon">📒</span>
           <span>日志</span>
+        </button>
+        <button id="recycleBtn" type="button" class="sidebar-link">
+          <span class="sidebar-icon">🗑️</span>
+          <span>回收站</span>
         </button>
         <p class="sidebar-hint">拖入文件或文件夹，自动上传到当前目录。</p>
         <div class="sidebar-footer">
@@ -136,6 +140,33 @@
             <div id="logEmpty" class="empty-message hidden">还没有符合条件的日志记录。</div>
           </div>
         </section>
+
+        <section id="recycleView" class="page-section hidden">
+          <div class="panel-card">
+            <div class="panel-card-header log-header">
+              <div>
+                <h2>回收站</h2>
+                <p>删除的文件和文件夹保存在这里，恢复时需要输入回收站密码。</p>
+              </div>
+              <button id="refreshRecycleBtn" type="button" class="secondary-btn">刷新回收站</button>
+            </div>
+          </div>
+          <div class="recycle-table-wrap">
+            <table class="recycle-table">
+              <thead>
+                <tr>
+                  <th>名称</th>
+                  <th>原位置</th>
+                  <th class="recycle-time-col">删除时间</th>
+                  <th class="recycle-size-col">大小</th>
+                  <th class="recycle-action-col">操作</th>
+                </tr>
+              </thead>
+              <tbody id="recycleTableBody"></tbody>
+            </table>
+            <div id="recycleEmpty" class="empty-message hidden">回收站为空。</div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -163,6 +194,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/app.js?v=20260903-8"></script>
+  <script src="/app.js?v=20260903-9"></script>
 </body>
 </html>

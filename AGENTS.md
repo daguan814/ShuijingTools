@@ -16,12 +16,14 @@
 
 ```text
 /vol2/1000/backup/ShuijingTools/storage
+/vol2/1000/backup/ShuijingTools/recycle_bin
 /vol2/1000/backup/docker/mysql
 ```
 
 解释：
 
 - `storage`：所有用户的真实文件和文件夹。
+- `recycle_bin`：用户删除后等待恢复的文件和文件夹。
 - `/vol2/1000/backup/docker/mysql`：MySQL 数据卷，保存用户和登录会话。
 
 以下路径也应谨慎处理：

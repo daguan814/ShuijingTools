@@ -757,6 +757,72 @@ button {
   margin: 16px;
 }
 
+.recycle-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(30, 40, 80, 0.05);
+}
+
+.recycle-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.recycle-table th,
+.recycle-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.recycle-table th {
+  background: #fbfcff;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.recycle-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.recycle-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 190px;
+  font-weight: 650;
+}
+
+.recycle-path {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.recycle-time-col {
+  width: 180px;
+}
+
+.recycle-size-col {
+  width: 100px;
+}
+
+.recycle-action-col {
+  width: 86px;
+}
+
+.recycle-time,
+.recycle-size {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.recycle-table-wrap .empty-message {
+  margin: 16px;
+}
+
 .empty-message {
   padding: 40px 16px;
   color: var(--muted);
@@ -914,14 +980,18 @@ button {
   }
 
   .storage-body {
-    grid-template-columns: 1fr;
+    display: block;
+    min-height: 0;
   }
 
   .sidebar {
     display: flex;
     flex-direction: row;
-    gap: 8px;
-    padding: 8px 12px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    min-height: 0;
+    padding: 7px 12px;
     border-right: none;
     border-bottom: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.96);
@@ -936,8 +1006,14 @@ button {
   .sidebar-link {
     justify-content: center;
     width: auto;
-    flex: 1 1 0;
-    padding: 9px 12px;
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.86rem;
+  }
+
+  .sidebar-icon {
+    font-size: 0.92rem;
   }
 
   .sidebar-link + .sidebar-link {
@@ -1040,5 +1116,53 @@ button {
   .log-table .log-content {
     grid-column: 1 / -1;
     line-height: 1.5;
+  }
+
+  .recycle-table thead {
+    display: none;
+  }
+
+  .recycle-table,
+  .recycle-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .recycle-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .recycle-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .recycle-table td {
+    display: block;
+    padding: 0;
+    border: none;
+  }
+
+  .recycle-name {
+    min-width: 0;
+  }
+
+  .recycle-path {
+    grid-column: 1 / -1;
+    font-size: 0.8rem;
+  }
+
+  .recycle-time,
+  .recycle-size {
+    font-size: 0.76rem;
+  }
+
+  .recycle-table td:last-child {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
   }
 }

@@ -7,6 +7,7 @@ __pycache__/
 .server.local.md
 .env
 uploads/
+recycle_bin/
 backend/storage/*
 !backend/storage/.gitkeep
 backend/*.db

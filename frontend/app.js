@@ -11,6 +11,7 @@ let entries = [];
 let selectedPaths = new Set();
 let moveDestination = "";
 let logEntries = [];
+let recycleItems = [];
 let activeLogFilter = "all";
 let activeView = "files";
 
@@ -141,7 +142,8 @@ function bindLogin() {
         json: { username },
       });
       if (response.status === 404) {
-        error.textContent = "用户不存在，请检查用户名。";
+        const data = await safeJson(response);
+        error.textContent = data?.detail || "用户不存在，请检查用户名。";
         return;
       }
       if (!response.ok) {
@@ -178,6 +180,10 @@ function bindStorage() {
     switchView("logs");
     loadLogs();
   });
+  document.getElementById("recycleBtn")?.addEventListener("click", () => {
+    switchView("recycle");
+    loadRecycleItems();
+  });
   document.getElementById("uploadFileBtn")?.addEventListener("click", () =>
     document.getElementById("fileInput").click()
   );
@@ -204,6 +210,8 @@ function bindStorage() {
     ?.addEventListener("click", batchDeleteSelected);
 
   document.getElementById("refreshLogsBtn")?.addEventListener("click", loadLogs);
+  document.getElementById("refreshRecycleBtn")?.addEventListener("click", loadRecycleItems);
+  document.getElementById("recycleTableBody")?.addEventListener("click", handleRecycleClick);
   document.getElementById("logFilters")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-log-filter]");
     if (!button) return;
@@ -520,14 +528,74 @@ async function navigateTo(path) {
   await loadCurrentDirectory();
   document.getElementById("rootBtn")?.classList.add("active");
   document.getElementById("logsBtn")?.classList.remove("active");
+  document.getElementById("recycleBtn")?.classList.remove("active");
 }
 
 function switchView(view) {
   activeView = view;
   document.getElementById("filesView")?.classList.toggle("hidden", view !== "files");
   document.getElementById("logsView")?.classList.toggle("hidden", view !== "logs");
+  document.getElementById("recycleView")?.classList.toggle("hidden", view !== "recycle");
   document.getElementById("rootBtn")?.classList.toggle("active", view === "files");
   document.getElementById("logsBtn")?.classList.toggle("active", view === "logs");
+  document.getElementById("recycleBtn")?.classList.toggle("active", view === "recycle");
+}
+
+async function loadRecycleItems() {
+  if (!token) return;
+  try {
+    const response = await api("/recycle");
+    if (!response.ok) {
+      showToast("读取回收站失败。");
+      return;
+    }
+    recycleItems = await response.json();
+    renderRecycleItems();
+  } catch (_err) {
+    showToast("读取回收站失败。");
+  }
+}
+
+function renderRecycleItems() {
+  const tableBody = document.getElementById("recycleTableBody");
+  const empty = document.getElementById("recycleEmpty");
+  if (!tableBody || !empty) return;
+  empty.classList.toggle("hidden", recycleItems.length > 0);
+  tableBody.innerHTML = recycleItems
+    .map(
+      (item) => `
+        <tr>
+          <td class="recycle-name">${item.type === "folder" ? folderIcon(item.name) : fileIcon(item.name)}<span>${escapeHtml(item.name)}</span></td>
+          <td class="recycle-path">${escapeHtml(item.original_path)}</td>
+          <td class="recycle-time">${escapeHtml(formatDate(item.deleted_at))}</td>
+          <td class="recycle-size">${escapeHtml(item.size_display || "--")}</td>
+          <td><button type="button" class="row-btn restore-btn" data-id="${item.id}">恢复</button></td>
+        </tr>`
+    )
+    .join("");
+}
+
+async function handleRecycleClick(event) {
+  const button = event.target.closest(".restore-btn");
+  if (!button) return;
+  const password = window.prompt("请输入回收站恢复密码");
+  if (password === null) return;
+  try {
+    const response = await api(`/recycle/${button.dataset.id}/restore`, {
+      method: "POST",
+      json: { password },
+    });
+    if (!response.ok) {
+      const data = await safeJson(response);
+      showToast(data?.detail || "恢复失败。");
+      return;
+    }
+    await loadRecycleItems();
+    await loadUserInfo();
+    showToast("已恢复到原位置。");
+  } catch (_err) {
+    showToast("恢复失败。");
+  }
 }
 
 async function loadLogs() {
