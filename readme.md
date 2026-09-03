@@ -2,7 +2,7 @@
 
 一个轻量的多用户文件存储网站，采用 Flask、MySQL 和原生 HTML/CSS/JavaScript 构建。每个用户拥有独立目录，可以在网页中浏览、上传、预览、移动、删除和下载文件。
 
-生产地址：`https://shuijing.site:8080`
+
 
 ## 功能
 

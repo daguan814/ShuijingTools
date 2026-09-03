@@ -37,16 +37,77 @@ const PREVIEW_EXTENSIONS = new Set([
   "wav",
 ]);
 
-const fileIcon = `
-  <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-    <path d="M14 2v6h6"></path>
-  </svg>`;
+const FILE_TYPE_EXTENSIONS = {
+  image: ["jpg", "jpeg", "png", "gif", "svg", "webp", "bmp", "ico", "heic", "raw"],
+  video: ["mp4", "mov", "mkv", "avi", "webm", "m4v", "flv"],
+  audio: ["mp3", "wav", "flac", "m4a", "aac", "ogg", "wma"],
+  pdf: ["pdf"],
+  word: ["doc", "docx", "odt", "rtf"],
+  sheet: ["xls", "xlsx", "csv", "ods"],
+  slides: ["ppt", "pptx", "odp", "key"],
+  archive: ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso"],
+  code: ["html", "htm", "css", "js", "jsx", "ts", "tsx", "py", "java", "c", "cpp", "h", "go", "rs", "php", "vue", "sh", "sql", "json", "xml", "yaml", "yml"],
+  text: ["txt", "md", "log", "ini", "conf"],
+  app: ["exe", "msi", "dmg", "pkg", "apk", "appimage", "deb", "rpm"],
+  font: ["ttf", "otf", "woff", "woff2", "eot"],
+  database: ["db", "sqlite", "sqlite3", "mdb"],
+};
 
-const folderIcon = `
-  <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-  </svg>`;
+const FILE_ICON_PATHS = {
+  generic: '<path d="M7 2.75h7l4.25 4.25v14.25H7z"/><path d="M14 2.75V7h4.25"/>',
+  image: '<rect x="3.25" y="4.25" width="17.5" height="15.5" rx="2.25"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4.5 17 4.6-4.5 3.2 3 2.2-2.1 5 4.6"/>',
+  video: '<rect x="3.25" y="5" width="17.5" height="14" rx="2.25"/><path d="m10 9 5 3-5 3z"/>',
+  audio: '<path d="M9 18V6l9-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="15.5" cy="16" r="2.5"/><path d="M9 9.5 18 7.5"/>',
+  pdf: '<path d="M7 2.75h7l4.25 4.25v14.25H7z"/><path d="M14 2.75V7h4.25"/><path d="M9 16v-5h2a1.5 1.5 0 0 1 0 3H9m5-3h1.25a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H14z"/>',
+  word: '<path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  sheet: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12M15 9v12"/>',
+  slides: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4m-2-13 5 2.5-5 2.5z"/>',
+  archive: '<path d="M7 2.75h7l4.25 4.25v14.25H7z"/><path d="M14 2.75V7h4.25M10 3v2m0 2v2m0 2v2m0 2v3h3v-3z"/>',
+  code: '<path d="M7 2.75h7l4.25 4.25v14.25H7z"/><path d="M14 2.75V7h4.25M11 11l-2 2 2 2m3-4 2 2-2 2"/>',
+  text: '<path d="M7 2.75h7l4.25 4.25v14.25H7z"/><path d="M14 2.75V7h4.25M9.5 11h6M9.5 14.5h6M9.5 18h4"/>',
+  app: '<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9h17M8 14l2 2-2 2m4 0h4"/>',
+  font: '<path d="M7 20 12 4l5 16M9 14h6"/>',
+  database: '<ellipse cx="12" cy="5.5" rx="7.5" ry="3"/><path d="M4.5 5.5v6c0 1.65 3.36 3 7.5 3s7.5-1.35 7.5-3v-6M4.5 11.5v6c0 1.65 3.36 3 7.5 3s7.5-1.35 7.5-3v-6"/>',
+};
+
+function fileTypeForName(name) {
+  const text = String(name || "");
+  const dot = text.lastIndexOf(".");
+  const extension = dot > 0 && dot < text.length - 1
+    ? text.slice(dot + 1).toLowerCase()
+    : "";
+  return Object.entries(FILE_TYPE_EXTENSIONS).find(([, extensions]) =>
+    extensions.includes(extension)
+  )?.[0] || "generic";
+}
+
+function fileIcon(name) {
+  const type = fileTypeForName(name);
+  return `<span class="file-icon-wrap file-icon-wrap--${type}">
+    <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${FILE_ICON_PATHS[type]}</svg>
+  </span>`;
+}
+
+function folderTypeForName(name) {
+  const value = String(name || "").toLowerCase();
+  if (/(图片|照片|photo|picture|image)/.test(value)) return "image";
+  if (/(视频|电影|video|movie)/.test(value)) return "video";
+  if (/(音乐|音频|music|audio)/.test(value)) return "audio";
+  if (/(代码|项目|code|project|src)/.test(value)) return "code";
+  if (/(下载|download)/.test(value)) return "download";
+  if (/(文档|资料|document|docs)/.test(value)) return "document";
+  return "default";
+}
+
+function folderIcon(name = "") {
+  const type = folderTypeForName(name);
+  return `<span class="folder-icon-wrap folder-icon-wrap--${type}">
+    <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path class="folder-icon-fill" d="M2.75 7.25A2.25 2.25 0 0 1 5 5h4.1l2 2H19a2.25 2.25 0 0 1 2.25 2.25v8.5A2.25 2.25 0 0 1 19 20H5a2.25 2.25 0 0 1-2.25-2.25z"/>
+      <path d="M2.75 9h18.5"/>
+    </svg>
+  </span>`;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   bindLogin();
@@ -345,7 +406,7 @@ function renderTable() {
   body.innerHTML = entries
     .map((entry) => {
       const isFolder = entry.type === "folder";
-      const icon = isFolder ? folderIcon : fileIcon;
+      const icon = isFolder ? folderIcon(entry.name) : fileIcon(entry.name);
       const canPreview = !isFolder && isPreviewableFile(entry.name);
       const nameCell = isFolder
         ? `<button type="button" class="entry-link" data-path="${escapeAttr(entry.path)}">${icon}<span>${escapeHtml(entry.name)}</span></button>`
@@ -791,7 +852,7 @@ function renderMoveFolders(entries) {
     .map(
       (folder) => `
         <button type="button" class="move-folder-item" data-path="${escapeAttr(folder.path)}">
-          ${folderIcon}<span>${escapeHtml(folder.name)}</span>
+          ${folderIcon(folder.name)}<span>${escapeHtml(folder.name)}</span>
         </button>`
     )
     .join("");
