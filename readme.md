@@ -11,7 +11,7 @@
 - 浏览目录、查看修改时间和普通文件大小；
 - 上传单个文件、多个文件或完整文件夹；
 - 支持拖放上传并保留目录结构；
-- 新建文件夹、批量移动和批量删除；
+- 新建文件夹、单项重命名、批量移动和批量删除；
 - 删除内容进入按用户隔离的回收站，输入管理密码后可恢复；
 - 常见图片、文档、文本、音视频文件在线预览；
 - 单个文件使用浏览器原生下载，支持条件请求和 Range；
@@ -139,6 +139,7 @@ python3 -m http.server 5173 -d frontend
 | `POST` | `/api/files/upload` | 上传文件或文件夹 |
 | `POST` | `/api/files/mkdir` | 新建文件夹 |
 | `POST` | `/api/files/move` | 批量移动 |
+| `POST` | `/api/files/rename` | 重命名单个文件或文件夹 |
 | `POST` | `/api/files/delete` | 删除单个路径 |
 | `POST` | `/api/files/batch-delete` | 批量删除 |
 | `POST` | `/api/files/download/prepare` | 生成短期下载链接 |

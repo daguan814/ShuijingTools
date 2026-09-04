@@ -282,6 +282,35 @@ def move_paths():
     return jsonify({"moved": moved})
 
 
+@files_bp.route("/rename", methods=["POST"])
+def rename_path():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"detail": "invalid json"}), 400
+
+    try:
+        renamed = file_service.rename_path(
+            g.current_user,
+            str(payload.get("path", "")),
+            str(payload.get("name", "")),
+        )
+    except FileExistsError:
+        return jsonify({"detail": "同名文件或文件夹已存在"}), 409
+    except FileNotFoundError:
+        return jsonify({"detail": "path not found"}), 404
+    except ValueError as exc:
+        return jsonify({"detail": str(exc)}), 400
+
+    if renamed["path"] != renamed["target"]:
+        target_type = "文件夹" if renamed["type"] == "folder" else "文件"
+        _record_action(
+            g.current_user["id"],
+            f"重命名{target_type}",
+            f"{renamed['path']} → {renamed['target']}",
+        )
+    return jsonify(renamed)
+
+
 @files_bp.route("/download/prepare", methods=["POST"])
 def prepare_download():
     payload = request.get_json(silent=True)

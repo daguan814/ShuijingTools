@@ -167,6 +167,31 @@ class FileService:
         target.mkdir(parents=True, exist_ok=False)
         return self.relative_path(user, target)
 
+    def rename_path(self, user, relative_path: str, new_name: str):
+        rel = self.normalize_relative_path(relative_path)
+        if not rel:
+            raise ValueError("cannot rename user root")
+        source = self.resolve_user_path(user, rel)
+        if not source.exists():
+            raise FileNotFoundError(rel)
+
+        target = (source.parent / self.normalize_name(new_name)).resolve()
+        root = self.user_root(user)
+        if target != root and root not in target.parents:
+            raise ValueError("path escapes user storage")
+        item_type = "folder" if source.is_dir() else "file"
+        if target == source:
+            return {"path": rel, "target": rel, "type": item_type}
+        if target.exists():
+            raise FileExistsError(target.name)
+
+        source.rename(target)
+        return {
+            "path": rel,
+            "target": self.relative_path(user, target),
+            "type": item_type,
+        }
+
     def upload_file(self, user, parent_path: str, relative_name: str, file_storage):
         parent_rel = self.normalize_relative_path(parent_path)
         file_rel = self.normalize_relative_path(relative_name)

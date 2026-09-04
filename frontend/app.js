@@ -207,6 +207,7 @@ function bindStorage() {
   document
     .getElementById("batchDownloadBtn")
     ?.addEventListener("click", batchDownloadSelected);
+  document.getElementById("renameBtn")?.addEventListener("click", renameSelected);
   document
     .getElementById("batchMoveBtn")
     ?.addEventListener("click", openMoveModal);
@@ -511,6 +512,7 @@ function updateSelectionUi() {
   const count = selectedPaths.size;
   const countEl = document.getElementById("selectionCount");
   const downloadBtn = document.getElementById("batchDownloadBtn");
+  const renameBtn = document.getElementById("renameBtn");
   const moveBtn = document.getElementById("batchMoveBtn");
   const deleteBtn = document.getElementById("batchDeleteBtn");
   const selectAll = document.getElementById("selectAllCheckbox");
@@ -518,6 +520,7 @@ function updateSelectionUi() {
   if (countEl) countEl.textContent = `已选择 ${count} 项`;
   const disabled = count === 0;
   if (downloadBtn) downloadBtn.disabled = disabled;
+  if (renameBtn) renameBtn.disabled = count !== 1;
   if (moveBtn) moveBtn.disabled = disabled;
   if (deleteBtn) deleteBtn.disabled = disabled;
   if (selectAll) {
@@ -695,6 +698,7 @@ function getLogCategory(content = "") {
   if (action.startsWith("新建")) return "create";
   if (action.startsWith("下载") || action.startsWith("批量下载")) return "download";
   if (action.startsWith("移动")) return "move";
+  if (action.startsWith("重命名")) return "rename";
   if (action.startsWith("删除")) return "delete";
   if (action.startsWith("恢复")) return "restore";
   return "other";
@@ -706,6 +710,7 @@ function getLogCategoryLabel(category) {
     create: "新建",
     download: "下载",
     move: "移动",
+    rename: "重命名",
     delete: "删除",
     restore: "恢复",
     other: "其他",
@@ -733,6 +738,35 @@ async function createFolder() {
     await loadUserInfo();
   } catch (_err) {
     showToast("创建文件夹失败。");
+  }
+}
+
+async function renameSelected() {
+  if (selectedPaths.size !== 1) return;
+  const path = Array.from(selectedPaths)[0];
+  const entry = entries.find((item) => item.path === path);
+  if (!entry) return;
+
+  const name = window.prompt("输入新名称", entry.name);
+  if (name === null) return;
+  const trimmed = name.trim();
+  if (!trimmed || trimmed === entry.name) return;
+
+  try {
+    const response = await api("/files/rename", {
+      method: "POST",
+      json: { path, name: trimmed },
+    });
+    if (!response.ok) {
+      const data = await safeJson(response);
+      showToast(data?.detail || "重命名失败。");
+      return;
+    }
+    showToast("重命名完成。");
+    selectedPaths.clear();
+    await loadCurrentDirectory();
+  } catch (_err) {
+    showToast("重命名失败。");
   }
 }
 

@@ -801,6 +801,7 @@ button {
 .log-type--create { background: #edf0ff; color: #5365d8; }
 .log-type--download { background: #e8f5fb; color: #237a9d; }
 .log-type--move { background: #fff3df; color: #a86613; }
+.log-type--rename { background: #e9f3ff; color: #2366a8; }
 .log-type--delete { background: #ffebed; color: #c24150; }
 .log-type--restore { background: #f0eaff; color: #7550bb; }
 

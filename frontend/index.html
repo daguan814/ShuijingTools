@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
-  <link rel="stylesheet" href="/styles.css?v=20260903-10">
+  <link rel="stylesheet" href="/styles.css?v=20260904-1">
 </head>
 <body>
   <div id="loginView" class="auth-screen">
@@ -77,6 +77,7 @@
             <span id="selectionCount" class="selection-count">已选择 0 项</span>
             <div class="batch-actions">
               <button id="batchDownloadBtn" type="button" class="secondary-btn" disabled>下载</button>
+              <button id="renameBtn" type="button" class="secondary-btn" disabled>重命名</button>
               <button id="batchMoveBtn" type="button" class="secondary-btn" disabled>移动</button>
               <button id="batchDeleteBtn" type="button" class="secondary-btn danger-btn" disabled>删除</button>
             </div>
@@ -124,6 +125,7 @@
             <button type="button" class="log-filter" data-log-filter="create">新建</button>
             <button type="button" class="log-filter" data-log-filter="download">下载</button>
             <button type="button" class="log-filter" data-log-filter="move">移动</button>
+            <button type="button" class="log-filter" data-log-filter="rename">重命名</button>
             <button type="button" class="log-filter" data-log-filter="delete">删除</button>
             <button type="button" class="log-filter" data-log-filter="restore">恢复</button>
           </div>
@@ -216,6 +218,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/app.js?v=20260903-10"></script>
+  <script src="/app.js?v=20260904-1"></script>
 </body>
 </html>

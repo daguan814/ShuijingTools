@@ -9,6 +9,7 @@ class LogService:
         "create": ("新建%",),
         "download": ("下载%", "批量下载%"),
         "move": ("移动%",),
+        "rename": ("重命名%",),
         "delete": ("删除%",),
         "restore": ("恢复%",),
     }
