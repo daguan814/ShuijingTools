@@ -109,13 +109,35 @@ class FileService:
     def _entry_info(self, user, absolute: Path, relative_path: str) -> dict:
         stat = absolute.stat()
         is_dir = absolute.is_dir()
-        size = 0 if is_dir else stat.st_size
+        child_folder_count = 0
+        child_file_count = 0
+        if is_dir:
+            try:
+                for child in absolute.iterdir():
+                    if child.name == ".DS_Store":
+                        continue
+                    if child.is_dir():
+                        child_folder_count += 1
+                    elif child.is_file():
+                        child_file_count += 1
+            except OSError:
+                pass
+            size = self._directory_size(absolute)
+        else:
+            size = stat.st_size
         return {
             "name": absolute.name,
             "path": relative_path,
             "type": "folder" if is_dir else "file",
             "size": size,
-            "size_display": "--" if is_dir else format_size(size),
+            "size_display": format_size(size),
+            "child_folder_count": child_folder_count,
+            "child_file_count": child_file_count,
+            "content_display": (
+                f"{child_folder_count} 个文件夹 · {child_file_count} 个文件"
+                if is_dir
+                else "--"
+            ),
             "modified_at": datetime.fromtimestamp(
                 stat.st_mtime, tz=timezone.utc
             ).isoformat(),

@@ -459,13 +459,17 @@ function renderTable() {
           : `<button type="button" class="file-download-btn" data-path="${escapeAttr(entry.path)}" title="点击下载">${icon}<span>${escapeHtml(entry.name)}</span></button>`;
 
       const checked = selectedPaths.has(entry.path) ? "checked" : "";
+      const folderMeta = isFolder
+        ? `<div class="entry-folder-meta">${escapeHtml(entry.content_display)} · ${escapeHtml(entry.size_display)}</div>`
+        : "";
 
       return `
         <tr data-path="${escapeAttr(entry.path)}" data-type="${entry.type}">
           <td class="select-cell">
             <input class="row-checkbox" type="checkbox" data-path="${escapeAttr(entry.path)}" ${checked} aria-label="选择 ${escapeAttr(entry.name)}">
           </td>
-          <td>${nameCell}</td>
+          <td>${nameCell}${folderMeta}</td>
+          <td class="content-cell">${escapeHtml(entry.content_display || "--")}</td>
           <td>${escapeHtml(formatDate(entry.modified_at))}</td>
           <td>${escapeHtml(entry.size_display)}</td>
         </tr>`;

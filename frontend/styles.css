@@ -499,6 +499,19 @@ button {
   width: 170px;
 }
 
+.content-col {
+  width: 210px;
+}
+
+.content-cell {
+  color: var(--muted) !important;
+  white-space: nowrap;
+}
+
+.entry-folder-meta {
+  display: none;
+}
+
 .size-col {
   width: 110px;
 }
@@ -1131,13 +1144,24 @@ button {
   }
 
   .file-table td:nth-child(3),
-  .file-table td:nth-child(4) {
+  .file-table td:nth-child(4),
+  .file-table td:nth-child(5) {
     display: none;
   }
 
   .file-table th:nth-child(3),
-  .file-table th:nth-child(4) {
+  .file-table th:nth-child(4),
+  .file-table th:nth-child(5) {
     display: none;
+  }
+
+  .entry-folder-meta {
+    display: block;
+    margin-top: 3px;
+    padding-left: 41px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    white-space: nowrap;
   }
 
   .log-table-toolbar {
