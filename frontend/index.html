@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
-  <link rel="stylesheet" href="/styles.css?v=20260904-2">
+  <link rel="stylesheet" href="/styles.css?v=20260904-3">
 </head>
 <body>
   <div id="loginView" class="auth-screen">
@@ -112,26 +112,24 @@
         </section>
 
         <section id="logsView" class="page-section hidden">
-          <div class="panel-card">
-            <div class="panel-card-header log-header">
-              <div>
-                <h2>操作日志</h2>
-                <p>自动记录当前用户的文件操作和操作时间。</p>
-              </div>
-              <button id="refreshLogsBtn" type="button" class="secondary-btn">刷新日志</button>
-            </div>
+          <div class="log-simple-header">
+            <h2>操作日志</h2>
+            <button id="refreshLogsBtn" type="button" class="secondary-btn">刷新</button>
           </div>
-          <div id="logFilters" class="log-filters" aria-label="日志类型筛选">
-            <button type="button" class="log-filter active" data-log-filter="all">全部</button>
-            <button type="button" class="log-filter" data-log-filter="upload">上传</button>
-            <button type="button" class="log-filter" data-log-filter="create">新建</button>
-            <button type="button" class="log-filter" data-log-filter="download">下载</button>
-            <button type="button" class="log-filter" data-log-filter="move">移动</button>
-            <button type="button" class="log-filter" data-log-filter="rename">重命名</button>
-            <button type="button" class="log-filter" data-log-filter="delete">删除</button>
-            <button type="button" class="log-filter" data-log-filter="restore">恢复</button>
-          </div>
-          <div class="log-query-bar">
+          <div class="log-table-toolbar">
+            <label class="log-type-control">
+              <span>类型</span>
+              <select id="logTypeFilter">
+                <option value="all">全部</option>
+                <option value="upload">上传</option>
+                <option value="create">新建</option>
+                <option value="download">下载</option>
+                <option value="move">移动</option>
+                <option value="rename">重命名</option>
+                <option value="delete">删除</option>
+                <option value="restore">恢复</option>
+              </select>
+            </label>
             <label class="log-date-control">
               <span>日期</span>
               <input id="logDateFilter" type="date">
@@ -220,6 +218,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/app.js?v=20260904-2"></script>
+  <script src="/app.js?v=20260904-3"></script>
 </body>
 </html>

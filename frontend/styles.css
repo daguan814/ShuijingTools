@@ -679,41 +679,30 @@ button {
   margin-bottom: 0;
 }
 
-.log-filters {
+.log-simple-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.log-filter {
-  padding: 8px 15px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--muted);
-  font-weight: 600;
+.log-simple-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
 }
 
-.log-filter:hover,
-.log-filter.active {
-  border-color: rgba(90, 103, 216, 0.35);
-  background: var(--hover);
-  color: var(--primary);
-}
-
-.log-query-bar {
+.log-table-toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 9px;
-  margin-bottom: 14px;
-  padding: 11px 13px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel);
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
 }
 
+.log-type-control,
 .log-date-control,
 .log-page-size-control {
   display: inline-flex;
@@ -724,6 +713,7 @@ button {
   font-weight: 650;
 }
 
+.log-type-control select,
 .log-date-control input,
 .log-page-size-control select {
   min-height: 36px;
@@ -753,7 +743,8 @@ button {
 }
 
 .log-table-wrap {
-  overflow-x: auto;
+  max-height: calc(100vh - 245px);
+  overflow: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--panel);
@@ -762,6 +753,7 @@ button {
 
 .log-table {
   width: 100%;
+  min-width: 680px;
   border-collapse: collapse;
 }
 
@@ -774,6 +766,9 @@ button {
 }
 
 .log-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background: #fbfcff;
   color: var(--muted);
   font-size: 0.82rem;
@@ -807,22 +802,20 @@ button {
 }
 
 .log-type {
-  display: inline-flex;
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: #eef1f8;
+  display: inline;
+  white-space: nowrap;
   color: #5d667a;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 700;
 }
 
-.log-type--upload { background: #e8f7ef; color: #25845b; }
-.log-type--create { background: #edf0ff; color: #5365d8; }
-.log-type--download { background: #e8f5fb; color: #237a9d; }
-.log-type--move { background: #fff3df; color: #a86613; }
-.log-type--rename { background: #e9f3ff; color: #2366a8; }
-.log-type--delete { background: #ffebed; color: #c24150; }
-.log-type--restore { background: #f0eaff; color: #7550bb; }
+.log-type--upload { color: #25845b; }
+.log-type--create { color: #5365d8; }
+.log-type--download { color: #237a9d; }
+.log-type--move { color: #a86613; }
+.log-type--rename { color: #2366a8; }
+.log-type--delete { color: #c24150; }
+.log-type--restore { color: #7550bb; }
 
 .log-table-wrap .empty-message {
   margin: 16px;
@@ -1147,71 +1140,22 @@ button {
     display: none;
   }
 
-  .log-header {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .log-query-bar {
-    align-items: stretch;
-  }
-
-  .log-date-control {
-    flex: 1 1 100%;
-  }
-
-  .log-date-control input {
-    flex: 1;
-    min-width: 0;
+  .log-table-toolbar {
+    gap: 8px;
   }
 
   .log-result-summary {
-    display: flex;
-    align-items: center;
     margin-left: 0;
   }
 
-  .log-table thead {
-    display: none;
+  .log-table-wrap {
+    max-height: calc(100vh - 255px);
+    border-radius: 10px;
   }
 
-  .log-table,
-  .log-table tbody {
-    display: block;
-    width: 100%;
-  }
-
-  .log-table tbody tr {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 8px 12px;
-    padding: 13px 14px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .log-table tbody tr:last-child {
-    border-bottom: none;
-  }
-
+  .log-table th,
   .log-table td {
-    display: block;
-    padding: 0;
-    border: none;
-  }
-
-  .log-table td:nth-child(2) {
-    order: -1;
-  }
-
-  .log-table .log-time {
-    align-self: center;
-    font-size: 0.78rem;
-    text-align: right;
-  }
-
-  .log-table .log-content {
-    grid-column: 1 / -1;
-    line-height: 1.5;
+    padding: 11px 12px;
   }
 
   .recycle-table thead {

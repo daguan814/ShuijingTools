@@ -218,10 +218,8 @@ function bindStorage() {
   document.getElementById("refreshLogsBtn")?.addEventListener("click", loadLogs);
   document.getElementById("refreshRecycleBtn")?.addEventListener("click", loadRecycleItems);
   document.getElementById("recycleTableBody")?.addEventListener("click", handleRecycleClick);
-  document.getElementById("logFilters")?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-log-filter]");
-    if (!button) return;
-    activeLogFilter = button.dataset.logFilter || "all";
+  document.getElementById("logTypeFilter")?.addEventListener("change", (event) => {
+    activeLogFilter = event.target.value || "all";
     logPage = 1;
     loadLogs();
   });
@@ -662,9 +660,8 @@ function renderLogs() {
   const empty = document.getElementById("logEmpty");
   if (!tableBody || !empty) return;
 
-  document.querySelectorAll("[data-log-filter]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.logFilter === activeLogFilter);
-  });
+  const typeFilter = document.getElementById("logTypeFilter");
+  if (typeFilter) typeFilter.value = activeLogFilter;
 
   empty.classList.toggle("hidden", logEntries.length > 0);
   tableBody.innerHTML = logEntries
