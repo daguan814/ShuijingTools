@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
-  <link rel="stylesheet" href="/styles.css?v=20260904-1">
+  <link rel="stylesheet" href="/styles.css?v=20260904-2">
 </head>
 <body>
   <div id="loginView" class="auth-screen">
@@ -63,23 +63,25 @@
 
       <main id="dropZone" class="main-content">
         <section id="filesView" class="page-section">
-          <div class="toolbar">
-          <div id="breadcrumb" class="breadcrumb" aria-label="当前位置"></div>
-          <div class="toolbar-actions">
-            <button id="uploadFileBtn" type="button" class="secondary-btn">上传文件</button>
-            <button id="uploadFolderBtn" type="button" class="secondary-btn">上传文件夹</button>
-            <button id="newFolderBtn" type="button" class="secondary-btn">新建文件夹</button>
-            <button id="refreshBtn" type="button" class="icon-only-btn" title="刷新">↻</button>
-          </div>
-          </div>
+          <div class="files-sticky-controls">
+            <div class="toolbar">
+              <div id="breadcrumb" class="breadcrumb" aria-label="当前位置"></div>
+              <div class="toolbar-actions">
+                <button id="uploadFileBtn" type="button" class="secondary-btn">上传文件</button>
+                <button id="uploadFolderBtn" type="button" class="secondary-btn">上传文件夹</button>
+                <button id="newFolderBtn" type="button" class="secondary-btn">新建文件夹</button>
+                <button id="refreshBtn" type="button" class="icon-only-btn" title="刷新">↻</button>
+              </div>
+            </div>
 
-          <div id="batchToolbar" class="batch-toolbar">
-            <span id="selectionCount" class="selection-count">已选择 0 项</span>
-            <div class="batch-actions">
-              <button id="batchDownloadBtn" type="button" class="secondary-btn" disabled>下载</button>
-              <button id="renameBtn" type="button" class="secondary-btn" disabled>重命名</button>
-              <button id="batchMoveBtn" type="button" class="secondary-btn" disabled>移动</button>
-              <button id="batchDeleteBtn" type="button" class="secondary-btn danger-btn" disabled>删除</button>
+            <div id="batchToolbar" class="batch-toolbar">
+              <span id="selectionCount" class="selection-count">已选择 0 项</span>
+              <div class="batch-actions">
+                <button id="batchDownloadBtn" type="button" class="secondary-btn" disabled>下载</button>
+                <button id="renameBtn" type="button" class="secondary-btn" disabled>重命名</button>
+                <button id="batchMoveBtn" type="button" class="secondary-btn" disabled>移动</button>
+                <button id="batchDeleteBtn" type="button" class="secondary-btn danger-btn" disabled>删除</button>
+              </div>
             </div>
           </div>
 
@@ -218,6 +220,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/app.js?v=20260904-1"></script>
+  <script src="/app.js?v=20260904-2"></script>
 </body>
 </html>
