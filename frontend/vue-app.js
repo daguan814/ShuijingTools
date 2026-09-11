@@ -5,11 +5,11 @@ Vue.createApp({
   data() { return {
     token: localStorage.getItem("storage_token") || "", user: {}, groups: [], entries: [], path: "", selected: [],
     view: "files", registering: false, busy: false, authError: "", toast: "", report: "", announcements: [], sharedFiles: [],
-    uploading: false, uploadProgress: 0, sort: { field: "name", ascending: true },
+    uploading: false, uploadProgress: 0, sort: { field: "name", ascending: true }, movePickerOpen: false, movePickerPath: "", movePickerEntries: [], movePickerBusy: false,
     loginForm: { groupId: "", username: "", password: "" }, registerForm: { groupId: "", username: "", password: "", confirm: "" },
   }; },
   computed: {
-    pathParts() { return this.path ? this.path.split("/") : []; },
+    pathParts() { return this.path ? this.path.split("/") : []; }, movePickerParts() { return this.movePickerPath ? this.movePickerPath.split("/") : []; },
     currentAnnouncement() { return this.announcements[0] || null; },
     allSelected() { return this.entries.length > 0 && this.selected.length === this.entries.length; },
     sortedEntries() { const {field, ascending} = this.sort; const factor = ascending ? 1 : -1; return [...this.entries].sort((a,b) => { if (a.type !== b.type) return a.type === "folder" ? -1 : 1; let x = field === "modified" ? Date.parse(a.modified_at || 0) : field === "size" ? Number(a.size || a.total_size || 0) : String(a.name).localeCompare(String(b.name), "zh-CN", {numeric:true}); return x * factor; }); },
@@ -33,7 +33,7 @@ Vue.createApp({
     dropFiles(event){this.upload(event.dataTransfer.files);},
     async startDownload(paths){const r=await this.request("/files/download/prepare",{method:"POST",json:{paths,base:this.path}});if(!r.ok)return this.notify(await this.jsonError(r,"下载失败。"));const a=document.createElement("a");a.href=(await r.json()).url;a.click();this.notify("下载已开始。");}, downloadSelected(){this.startDownload(this.selected);},
     async rename(){const path=this.selected[0],current=this.entries.find(x=>x.path===path);const name=window.prompt("请输入新名称：",(current&&current.name)||"");if(!name||!name.trim())return;const r=await this.request("/files/rename",{method:"POST",json:{path,name:name.trim()}});if(!r.ok)return this.notify(await this.jsonError(r,"重命名失败。"));this.notify("重命名完成。");await this.loadFiles();},
-    async move(){const destination=window.prompt("请输入目标文件夹路径（例如：资料/作业；根目录请填写 /）：",this.path||"/");if(destination===null)return;const dest=destination.trim()==="/"?"":destination.trim();const r=await this.request("/files/move",{method:"POST",json:{paths:this.selected,destination:dest}});if(!r.ok)return this.notify(await this.jsonError(r,"移动失败。"));this.notify("移动完成。");await this.loadFiles();},
+    async openMovePicker(){this.movePickerOpen=true;await this.loadMovePicker("");}, async loadMovePicker(path){this.movePickerBusy=true;try{const r=await this.request("/files?path="+encodeURIComponent(path));if(!r.ok)return this.notify(await this.jsonError(r,"目录读取失败。"));const data=await r.json();this.movePickerPath=data.path||"";this.movePickerEntries=(data.entries||[]).filter(item=>item.type==="folder");}catch(_){this.notify("目录读取失败。");}finally{this.movePickerBusy=false;}}, async confirmMove(){const r=await this.request("/files/move",{method:"POST",json:{paths:this.selected,destination:this.movePickerPath}});if(!r.ok)return this.notify(await this.jsonError(r,"移动失败。"));this.movePickerOpen=false;this.notify("移动完成。");await this.loadFiles();},
     async remove(){if(!window.confirm(`确认删除选中的 ${this.selected.length} 项吗？文件将进入回收站。`))return;const r=await this.request("/files/batch-delete",{method:"POST",json:{paths:this.selected}});if(!r.ok)return this.notify(await this.jsonError(r,"删除失败。"));this.notify("已移入回收站。");await this.loadFiles();await this.refreshUser();},
     async refreshUser(){const r=await this.request("/auth/me");if(r.ok)this.user=(await r.json()).user;},
     async loadAnnouncements(){const r=await this.request("/auth/announcements");if(r.ok)this.announcements=(await r.json()).items||[];},

@@ -153,7 +153,15 @@ class AdminFileService:
             raise FileExistsError(target.name)
         new_relative = str(target.relative_to(self.root(admin_id))).replace("\\", "/")
         source.rename(target)
-        self.remove_shares(admin_id, relative, include_children=True)
+        try:
+            # A rename does not change ownership or access policy.  Keep the
+            # existing group shares and only update their relative paths.
+            self.rebase_shares(admin_id, relative, new_relative)
+        except Exception:
+            # Do not leave the filesystem and the share table pointing at
+            # different names when a database update fails.
+            target.rename(source)
+            raise
         return new_relative
 
     def move(self, admin_id, paths, destination):
@@ -166,8 +174,12 @@ class AdminFileService:
             if not relative or not source.exists():
                 raise ValueError("文件不存在或不能移动根目录")
             target = (dest / source.name).resolve()
+            if target == source.resolve():
+                continue
             if target.exists() and target != source:
                 raise FileExistsError(target.name)
+            if source.is_dir() and source.resolve() in target.parents:
+                raise ValueError("不能将文件夹移动到自身内部")
             source.rename(target)
             self.remove_shares(admin_id, relative, include_children=True)
             moved.append(str(target.relative_to(self.root(admin_id))).replace("\\", "/"))
@@ -264,6 +276,38 @@ class AdminFileService:
             else:
                 cursor.execute(f"DELETE FROM admin_file_shares WHERE admin_id={ph} AND relative_path={ph}", (admin_id, relative))
             conn.commit()
+        finally:
+            cursor.close(); conn.close()
+
+    def rebase_shares(self, admin_id, old_relative, new_relative):
+        """Update direct and descendant share paths after an item is renamed."""
+        ph = db_manager.placeholder()
+        conn = db_manager.get_connection(); cursor = db_manager.cursor(conn, dictionary=True)
+        try:
+            # A target cannot exist on disk during rename, so any share records
+            # already using the target prefix are stale records from an older
+            # deleted item. Remove those first to avoid a unique-key collision.
+            cursor.execute(
+                f"DELETE FROM admin_file_shares WHERE admin_id={ph} "
+                f"AND (relative_path={ph} OR relative_path LIKE {ph})",
+                (admin_id, new_relative, f"{new_relative}/%"),
+            )
+            cursor.execute(
+                f"SELECT id,relative_path FROM admin_file_shares WHERE admin_id={ph} "
+                f"AND (relative_path={ph} OR relative_path LIKE {ph})",
+                (admin_id, old_relative, f"{old_relative}/%"),
+            )
+            rows = cursor.fetchall()
+            for row in rows:
+                suffix = row["relative_path"][len(old_relative):]
+                cursor.execute(
+                    f"UPDATE admin_file_shares SET relative_path={ph} WHERE id={ph}",
+                    (f"{new_relative}{suffix}", row["id"]),
+                )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             cursor.close(); conn.close()
 

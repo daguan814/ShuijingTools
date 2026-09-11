@@ -198,12 +198,11 @@ def move_paths():
         return jsonify({"detail": "invalid json"}), 400
 
     paths = payload.get("paths")
+    if "destination" not in payload:
+        return jsonify({"detail": "destination is required"}), 400
     destination = str(payload.get("destination", ""))
     if not isinstance(paths, list) or not paths:
         return jsonify({"detail": "paths must be a non-empty list"}), 400
-    if not destination:
-        return jsonify({"detail": "destination is required"}), 400
-
     try:
         moved = file_service.move_paths(g.current_user, paths, destination)
     except FileExistsError as exc:
