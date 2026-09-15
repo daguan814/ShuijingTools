@@ -168,11 +168,14 @@ def messages():
     try:
         class_id=int(request.args.get("class_id","0") or 0) or None
         day=request.args.get("date","").strip() or None
+        page=max(1,int(request.args.get("page","1")))
+        page_size=min(100,max(10,int(request.args.get("page_size","20"))))
         if day:
             from datetime import datetime
             datetime.strptime(day,"%Y-%m-%d")
     except ValueError:return jsonify({"detail":"消息筛选参数无效"}),400
-    return jsonify({"requests":school_service.requests(class_id,day),"reports":school_service.reports(class_id,day)})
+    reports=school_service.reports_page(class_id,day,page,page_size)
+    return jsonify({"requests":school_service.requests(class_id,day),"reports":reports["items"],"reports_paging":{key:reports[key] for key in ("total","page","page_size","total_pages")}})
 
 @admin_bp.get("/logs")
 @admin_required

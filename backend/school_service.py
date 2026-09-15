@@ -233,5 +233,23 @@ class SchoolService:
         return self.rows("""SELECT r.id,r.content,r.status,r.created_at,u.username,u.class_id,c.name AS class_name FROM student_reports r
             JOIN storage_users u ON u.id=r.user_id JOIN school_classes c ON c.id=u.class_id"""+suffix+" ORDER BY r.id DESC",tuple(params))
 
+    def reports_page(self, class_id=None, day=None, page=1, page_size=20):
+        """Return reports plus paging metadata for the administrator table."""
+        ph=db_manager.placeholder(); where=[]; params=[]
+        if class_id: where.append(f"u.class_id={ph}"); params.append(class_id)
+        if day: where.append(f"DATE(r.created_at)={ph}"); params.append(day)
+        suffix=(" WHERE "+" AND ".join(where)) if where else ""
+        conn=db_manager.get_connection(); count_cursor=db_manager.cursor(conn)
+        count_cursor.execute("SELECT COUNT(*) FROM student_reports r JOIN storage_users u ON u.id=r.user_id"+suffix,tuple(params))
+        total=int(count_cursor.fetchone()[0]); count_cursor.close()
+        total_pages=max(1,(total+page_size-1)//page_size); page=min(max(1,page),total_pages)
+        cursor=db_manager.cursor(conn,dictionary=True)
+        cursor.execute("""SELECT r.id,r.content,r.status,r.created_at,u.username,u.class_id,c.name AS class_name FROM student_reports r
+            JOIN storage_users u ON u.id=r.user_id JOIN school_classes c ON c.id=u.class_id"""+suffix+
+            f" ORDER BY r.id DESC LIMIT {ph} OFFSET {ph}",tuple(params+[page_size,(page-1)*page_size]))
+        items=[dict(row) for row in cursor.fetchall()]
+        cursor.close(); conn.close()
+        return {"items":items,"total":total,"page":page,"page_size":page_size,"total_pages":total_pages}
+
 
 school_service=SchoolService()
