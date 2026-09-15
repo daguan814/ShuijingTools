@@ -5,6 +5,7 @@ import os
 import tempfile
 import zipfile
 from pathlib import Path
+from urllib.parse import quote
 
 from flask import Blueprint, current_app, g, jsonify, request, send_file
 from itsdangerous import BadSignature, SignatureExpired
@@ -338,6 +339,69 @@ def personal_download():
     except Exception as exc:
         return jsonify({"detail": str(exc)}), 400
 
+@admin_bp.post("/downloads/prepare")
+@admin_required
+def prepare_admin_download():
+    payload=request.get_json(silent=True) or {}
+    scope=payload.get("scope")
+    paths=payload.get("paths")
+    if scope not in {"personal","class"} or not isinstance(paths,list) or not paths:
+        return jsonify({"detail":"下载参数无效"}),400
+    try:
+        if scope=="personal":
+            for path in paths: admin_file_service.target(g.current_admin["id"],path)
+            ticket_data={"scope":"personal","paths":paths}
+        else:
+            class_id=int(payload.get("class_id"))
+            for path in paths:
+                user,sub_path,_=_class_path(class_id,path)
+                if not file_service.resolve_user_path(user,sub_path).exists(): raise FileNotFoundError(path)
+            ticket_data={"scope":"class","class_id":class_id,"paths":paths}
+    except Exception as exc:
+        return jsonify({"detail":str(exc)}),400
+    ticket=current_app.admin_serializer.dumps({"purpose":"download","admin_id":g.current_admin["id"],**ticket_data})
+    return jsonify({"url":f"/api/admin/downloads/ticket/{quote(ticket)}"})
+
+@admin_bp.get("/downloads/ticket/<path:ticket>")
+def admin_download_ticket(ticket):
+    archive_path=None
+    try:
+        payload=current_app.admin_serializer.loads(ticket,max_age=300)
+        admin=admin_service.find_by_id(payload.get("admin_id"))
+        if payload.get("purpose")!="download" or not admin or admin["status"]!="active": raise ValueError("invalid ticket")
+        paths=payload.get("paths")
+        if not isinstance(paths,list) or not paths: raise ValueError("invalid ticket")
+        sources=[]
+        if payload.get("scope")=="personal":
+            for path in paths: sources.append((admin_file_service.target(admin["id"],path),Path(path)))
+        elif payload.get("scope")=="class":
+            class_id=int(payload.get("class_id"))
+            for path in paths:
+                user,sub_path,class_path=_class_path(class_id,path)
+                sources.append((file_service.resolve_user_path(user,sub_path),Path(class_path)))
+        else: raise ValueError("invalid ticket")
+        if len(sources)==1 and sources[0][0].is_file():
+            target=sources[0][0]
+            return send_file(target,as_attachment=True,download_name=target.name,conditional=True)
+        temp=tempfile.NamedTemporaryFile(prefix="shuijing-admin-download-",suffix=".zip",delete=False)
+        archive_path=Path(temp.name);temp.close()
+        with zipfile.ZipFile(archive_path,"w",zipfile.ZIP_DEFLATED) as archive:
+            for source,display_path in sources:
+                if source.is_file() and not source.is_symlink(): archive.write(source,arcname=str(display_path))
+                elif source.is_dir():
+                    for child in source.rglob("*"):
+                        if child.is_file() and not child.is_symlink(): archive.write(child,arcname=str(display_path/child.relative_to(source)))
+        response=send_file(archive_path,as_attachment=True,download_name="管理员文件.zip",conditional=True)
+        response.call_on_close(lambda:archive_path.unlink(missing_ok=True));return response
+    except (BadSignature,SignatureExpired,KeyError,TypeError,ValueError):
+        return jsonify({"detail":"下载链接已失效或无效"}),401
+    except FileNotFoundError:
+        return jsonify({"detail":"文件不存在"}),404
+    except Exception:
+        if archive_path: archive_path.unlink(missing_ok=True)
+        current_app.logger.exception("管理员下载失败")
+        return jsonify({"detail":"下载失败"}),500
+
 @admin_bp.post("/personal-files/share")
 @admin_required
 def personal_share():
@@ -345,6 +409,14 @@ def personal_share():
     try:
         admin_file_service.set_shares(g.current_admin["id"], payload.get("paths", []), payload.get("class_ids", []))
         return "", 204
+    except Exception as exc:
+        return jsonify({"detail": str(exc)}), 400
+
+@admin_bp.post("/personal-files/shares/clear")
+@admin_required
+def clear_personal_shares():
+    try:
+        return jsonify({"removed": admin_file_service.clear_all_shares(g.current_admin["id"])})
     except Exception as exc:
         return jsonify({"detail": str(exc)}), 400
 

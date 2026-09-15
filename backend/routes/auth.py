@@ -154,11 +154,20 @@ def shared_download(share_id):
         return jsonify({"detail": str(exc)}), 404
 
 
+@auth_bp.get("/shared-files/<int:share_id>")
+def shared_folder_entries(share_id):
+    try:
+        return jsonify(admin_file_service.shared_entries(share_id, g.current_user["class_id"], request.args.get("path", "")))
+    except (FileNotFoundError, ValueError) as exc:
+        return jsonify({"detail": str(exc)}), 404
+
+
 @auth_bp.post("/shared-files/<int:share_id>/download/prepare")
 def prepare_shared_download(share_id):
     """Create a short-lived browser-download URL after checking the user session."""
     try:
-        admin_file_service.shared_target(share_id, g.current_user["class_id"])
+        path = request.args.get("path", "")
+        admin_file_service.shared_target(share_id, g.current_user["class_id"], path)
     except Exception as exc:
         return jsonify({"detail": str(exc)}), 404
     ticket = current_app.download_serializer.dumps(
@@ -167,6 +176,7 @@ def prepare_shared_download(share_id):
             "user_id": int(g.current_user["id"]),
             "class_id": int(g.current_user["class_id"]),
             "share_id": share_id,
+            "path": path,
         }
     )
     return jsonify({"url": f"/api/auth/shared-files/download/ticket/{quote(ticket)}"})
@@ -181,7 +191,7 @@ def shared_download_with_ticket(ticket):
         user_id = int(payload["user_id"])
         class_id = int(payload["class_id"])
         share_id = int(payload["share_id"])
-        target = admin_file_service.shared_target(share_id, class_id)
+        target = admin_file_service.shared_target(share_id, class_id, payload.get("path", ""))
         if target.is_file():
             log_service.add_log(user_id, f"下载管理员共享文件：{target.name}")
             return send_file(target, as_attachment=True, download_name=target.name, conditional=True)

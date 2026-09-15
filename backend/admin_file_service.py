@@ -279,6 +279,18 @@ class AdminFileService:
         finally:
             cursor.close(); conn.close()
 
+    def clear_all_shares(self, admin_id):
+        """Remove every sharing rule owned by this administrator."""
+        ph = db_manager.placeholder()
+        conn = db_manager.get_connection(); cursor = db_manager.cursor(conn)
+        try:
+            cursor.execute(f"DELETE FROM admin_file_shares WHERE admin_id={ph}", (admin_id,))
+            removed = cursor.rowcount
+            conn.commit()
+            return removed
+        finally:
+            cursor.close(); conn.close()
+
     def rebase_shares(self, admin_id, old_relative, new_relative):
         """Update direct and descendant share paths after an item is renamed."""
         ph = db_manager.placeholder()
@@ -345,14 +357,34 @@ class AdminFileService:
                 self.remove_shares(row["admin_id"], row["relative_path"])
         return items
 
-    def shared_target(self, share_id, class_id):
+    def shared_target(self, share_id, class_id, raw_path=""):
         ph = db_manager.placeholder()
         conn = db_manager.get_connection(); cursor = db_manager.cursor(conn, dictionary=True)
         cursor.execute(f"SELECT admin_id,relative_path FROM admin_file_shares WHERE id={ph} AND class_id={ph}", (share_id, class_id))
         row = cursor.fetchone(); cursor.close(); conn.close()
         if not row:
             raise FileNotFoundError("共享文件不存在")
-        return self.target(row["admin_id"], row["relative_path"])
+        root = self.target(row["admin_id"], row["relative_path"])
+        relative = file_service.normalize_relative_path(raw_path)
+        target = (root / relative).resolve() if relative else root
+        if target != root and root not in target.parents:
+            raise ValueError("路径超出共享目录")
+        if not target.exists() or target.is_symlink():
+            raise FileNotFoundError("共享文件不存在")
+        return target
+
+    def shared_entries(self, share_id, class_id, path=""):
+        target = self.shared_target(share_id, class_id, path)
+        if not target.is_dir():
+            raise ValueError("当前共享项目不是文件夹")
+        relative = file_service.normalize_relative_path(path)
+        entries = [
+            self._entry(child, f"{relative}/{child.name}".strip("/"))
+            for child in target.iterdir()
+            if child.name != ".DS_Store" and not child.is_symlink()
+        ]
+        entries.sort(key=lambda item: (item["type"] != "folder", file_service._natural_sort_key(item["name"])))
+        return {"path": relative, "entries": entries}
 
 
 admin_file_service = AdminFileService()
