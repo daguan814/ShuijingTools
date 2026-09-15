@@ -39,7 +39,7 @@ Vue.createApp({
     async loadAnnouncements(){const r=await this.request("/auth/announcements");if(r.ok)this.announcements=(await r.json()).items||[];},
     async loadShared(){const r=await this.request("/auth/shared-files");if(!r.ok)return this.notify(await this.jsonError(r,"共享文件读取失败。"));this.sharedFiles=(await r.json()).items||[];},
     async openShared(){this.view="shared";await this.loadShared();},
-    async downloadShared(item){const r=await this.request(`/auth/shared-files/${item.share_id}/download`);if(!r.ok)return this.notify(await this.jsonError(r,"下载失败。"));const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=item.type==="folder"?`${item.name}.zip`:item.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);},
+    async downloadShared(item){const r=await this.request(`/auth/shared-files/${item.share_id}/download/prepare`,{method:"POST"});if(!r.ok)return this.notify(await this.jsonError(r,"下载失败。"));const a=document.createElement("a");a.href=(await r.json()).url;a.download=item.type==="folder"?`${item.name}.zip`:item.name;document.body.appendChild(a);a.click();a.remove();this.notify("下载已开始。")},
     async submitReport(){if(!this.report)return;this.busy=true;const r=await this.request("/auth/reports",{method:"POST",json:{content:this.report}});this.busy=false;if(!r.ok)return this.notify(await this.jsonError(r,"提交失败。"));this.report="";this.notify("报告已提交给管理员。");},
   },
 }).mount("#app");

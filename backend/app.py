@@ -68,7 +68,7 @@ def create_app():
 
         if request.path in ("/api/health", "/api/auth/login", "/api/auth/classes", "/api/auth/register") or request.path.startswith("/api/admin/") or request.path.startswith("/api/preview-source/") or request.path.startswith(
             "/api/files/download/ticket/"
-        ):
+        ) or request.path.startswith("/api/auth/shared-files/download/ticket/"):
             return None
 
         token = _token_from_request()

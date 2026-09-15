@@ -2,7 +2,9 @@ import hashlib
 import re
 import uuid
 
-from flask import Blueprint, g, jsonify, make_response, request, send_file
+from flask import Blueprint, current_app, g, jsonify, make_response, request, send_file
+from itsdangerous import BadSignature, SignatureExpired
+from urllib.parse import quote
 
 from ..config import SECRET_KEY
 
@@ -150,6 +152,57 @@ def shared_download(share_id):
         response.call_on_close(lambda: archive.unlink(missing_ok=True)); return response
     except Exception as exc:
         return jsonify({"detail": str(exc)}), 404
+
+
+@auth_bp.post("/shared-files/<int:share_id>/download/prepare")
+def prepare_shared_download(share_id):
+    """Create a short-lived browser-download URL after checking the user session."""
+    try:
+        admin_file_service.shared_target(share_id, g.current_user["class_id"])
+    except Exception as exc:
+        return jsonify({"detail": str(exc)}), 404
+    ticket = current_app.download_serializer.dumps(
+        {
+            "kind": "shared",
+            "user_id": int(g.current_user["id"]),
+            "class_id": int(g.current_user["class_id"]),
+            "share_id": share_id,
+        }
+    )
+    return jsonify({"url": f"/api/auth/shared-files/download/ticket/{quote(ticket)}"})
+
+
+@auth_bp.get("/shared-files/download/ticket/<path:ticket>")
+def shared_download_with_ticket(ticket):
+    try:
+        payload = current_app.download_serializer.loads(ticket, max_age=300)
+        if payload.get("kind") != "shared":
+            raise ValueError("invalid ticket")
+        user_id = int(payload["user_id"])
+        class_id = int(payload["class_id"])
+        share_id = int(payload["share_id"])
+        target = admin_file_service.shared_target(share_id, class_id)
+        if target.is_file():
+            log_service.add_log(user_id, f"下载管理员共享文件：{target.name}")
+            return send_file(target, as_attachment=True, download_name=target.name, conditional=True)
+        temp = tempfile.NamedTemporaryFile(prefix="shuijing-shared-", suffix=".zip", delete=False)
+        archive = Path(temp.name)
+        temp.close()
+        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as output:
+            for child in target.rglob("*"):
+                if child.is_file() and not child.is_symlink():
+                    output.write(child, arcname=str(Path(target.name) / child.relative_to(target)))
+        log_service.add_log(user_id, f"下载管理员共享文件夹：{target.name}")
+        response = send_file(archive, as_attachment=True, download_name=f"{target.name}.zip", conditional=True)
+        response.call_on_close(lambda: archive.unlink(missing_ok=True))
+        return response
+    except (BadSignature, SignatureExpired, KeyError, TypeError, ValueError):
+        return jsonify({"detail": "download link expired or invalid"}), 401
+    except FileNotFoundError:
+        return jsonify({"detail": "file not found"}), 404
+    except Exception:
+        current_app.logger.exception("Shared file download failed")
+        return jsonify({"detail": "download failed"}), 500
 
 
 @auth_bp.post("/reports")
