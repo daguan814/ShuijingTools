@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>水镜云盘</title>
   <link rel="stylesheet" href="/styles.css?v=20260911-v136-1">
-  <style>[v-cloak]{display:none}</style>
+  <style>[v-cloak]{display:none}.announcement-backdrop{z-index:3000}.announcement-modal{width:min(560px,calc(100vw - 32px))}.announcement-modal-content{color:#26324a;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;max-height:min(55vh,520px);overflow-y:auto;padding:8px 2px 20px}.announcement-modal-footer{justify-content:space-between;gap:16px}@media(max-width:600px){.announcement-modal-footer{align-items:stretch;flex-direction:column}.announcement-modal-footer .primary-btn{width:100%}}</style>
 </head>
 <body>
   <div id="app" v-cloak>
@@ -35,7 +35,7 @@
         <div class="sidebar-heading">存储空间</div><button class="sidebar-link" :class="{active:view==='files'}" @click="openFiles('')"><span class="sidebar-icon">📁</span><span>全部文件</span></button>
         <div class="sidebar-heading sidebar-heading--tools">工具</div><button class="sidebar-link" :class="{active:view==='shared'}" @click="openShared"><span class="sidebar-icon">📤</span><span>管理员共享</span></button><button class="sidebar-link" :class="{active:view==='reports'}" @click="view='reports'"><span class="sidebar-icon">📝</span><span>提交报告</span></button>
         <div class="sidebar-heading sidebar-heading--notice">公告</div><div class="sidebar-announcement" v-if="currentAnnouncement"><strong>{{currentAnnouncement.title}}</strong><p>{{currentAnnouncement.content}}</p></div><div class="sidebar-announcement sidebar-announcement--empty" v-else>暂无公告</div>
-        <div class="sidebar-footer"><div>V1.4.4</div><div>design by 云梦职业教育中心 teacher.lu</div></div>
+        <div class="sidebar-footer"><div>V1.4.5</div><div>design by 云梦职业教育中心 teacher.lu</div></div>
       </aside>
       <main class="main-content" @dragover.prevent @drop.prevent="dropFiles">
         <section v-if="view==='files'" class="page-section">
@@ -50,7 +50,8 @@
     </div>
     <input ref="files" type="file" multiple hidden @change="upload($event.target.files)"><input ref="folder" type="file" webkitdirectory multiple hidden @change="upload($event.target.files, true)">
     <div v-if="movePickerOpen" class="modal-backdrop" @click.self="movePickerOpen=false"><section class="modal-card"><header class="modal-header"><h3>选择移动目标文件夹</h3><button class="icon-only-btn" @click="movePickerOpen=false">×</button></header><div class="move-breadcrumb"><button class="breadcrumb-item" @click="loadMovePicker('')">全部文件</button><template v-for="(part,index) in movePickerParts" :key="index"><span>/</span><button class="breadcrumb-item" @click="loadMovePicker(movePickerParts.slice(0,index+1).join('/'))">{{part}}</button></template></div><div class="move-folder-list"><button v-for="item in movePickerEntries" :key="item.path" class="move-folder-item" @click="loadMovePicker(item.path)"><span>📁</span>{{item.name}}</button><div v-if="!movePickerEntries.length&&!movePickerBusy" class="move-empty">当前文件夹没有下级文件夹</div></div><footer class="modal-footer"><span class="move-destination">目标：{{movePickerPath||'全部文件（根目录）'}}</span><div class="modal-actions"><button class="secondary-btn" @click="movePickerOpen=false">取消</button><button class="primary-btn" :disabled="movePickerBusy" @click="confirmMove">移动到此处</button></div></footer></section></div>
+    <div v-if="announcementPrompt&&currentAnnouncement" class="modal-backdrop announcement-backdrop"><section class="modal-card announcement-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-dialog-title" @keydown.tab.prevent="$refs.announcementConfirm.focus()"><header class="modal-header"><h3 id="announcement-dialog-title">📢 {{currentAnnouncement.title}}</h3></header><div class="announcement-modal-content">{{currentAnnouncement.content}}</div><footer class="modal-footer announcement-modal-footer"><span>请阅读公告并确认后继续使用</span><button ref="announcementConfirm" class="primary-btn" @click="acknowledgeAnnouncement">我知道了</button></footer></section></div>
     <div v-if="toast" class="toast toast--show">{{toast}}</div>
   </div>
-  <script src="/vendor/vue.global.prod.js"></script><script src="/vue-app.js?v=20260916-v144"></script>
+  <script src="/vendor/vue.global.prod.js"></script><script src="/vue-app.js?v=20260924-v145"></script>
 </body></html>
